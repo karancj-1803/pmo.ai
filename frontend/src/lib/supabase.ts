@@ -7,4 +7,4 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: { persistSession: false },
 });
 
-export const EDGE_FUNCTION_URL = `${supabaseUrl}/functions/v1/supervisor-agent`;
+export const EDGE_FUNCTION_URL = (import.meta.env.VITE_BACKEND_URL as string) || `${supabaseUrl}/functions/v1/supervisor-agent`;
