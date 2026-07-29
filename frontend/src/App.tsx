@@ -11,6 +11,7 @@ import {
 } from '@/lib/meta';
 import { Badge, ProgressBar, Spinner, EmptyState, Modal } from '@/components/ui';
 import { AgentActivityFeed } from '@/components/AgentActivityFeed';
+import { AgentThinking } from '@/components/AgentThinking';
 import {
   Plus, FolderKanban, Workflow, Brain, ListChecks, BookOpen, ShieldAlert, FileText,
   MessageSquare, ArrowLeft, Upload, Sparkles, TrendingUp, AlertTriangle, CheckCircle2,
@@ -899,24 +900,21 @@ function ReportStat({ label, value }: { label: string; value: number }) {
 function AgentsTab({ projectId }: { projectId: string }) {
   return (
     <div className="space-y-4 animate-fadeIn">
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-        {(Object.keys(AGENT_META) as AgentName[]).map((name) => {
-          const meta = AGENT_META[name];
-          const Icon = AGENT_ICON[name];
-          return (
-            <div key={name} className="card p-4">
-              <div className="flex items-center gap-2.5 mb-1.5">
-                <div className="w-9 h-9 rounded-lg bg-ink-100 text-ink-700 flex items-center justify-center"><Icon className="w-4.5 h-4.5" /></div>
-                <div><p className="font-semibold text-ink-900 text-sm">{meta.label}</p></div>
-              </div>
-              <p className="text-xs text-ink-500">{meta.role}</p>
-            </div>
-          );
-        })}
+      <div className="card p-5 bg-white/60 backdrop-blur-md border border-white/50 shadow-glow">
+        <h3 className="font-semibold text-ink-900 mb-1 flex items-center gap-2">
+          <Brain className="w-4.5 h-4.5 text-brand-600 animate-pulse" /> Agent Thinking
+        </h3>
+        <p className="text-sm text-ink-500 mb-4">
+          High-level execution summary showing the business objectives, inputs, actions, and outputs of each agent in execution order.
+        </p>
+        <AgentThinking projectId={projectId} />
       </div>
+
       <div className="card p-5">
-        <h3 className="font-semibold text-ink-900 mb-1 flex items-center gap-2"><Activity className="w-4 h-4 text-brand-600" /> Live Orchestration Trace</h3>
-        <p className="text-sm text-ink-500 mb-4">Event-driven log of agent decisions, tool calls, and results (LangGraph-style).</p>
+        <h3 className="font-semibold text-ink-900 mb-1 flex items-center gap-2">
+          <Activity className="w-4.5 h-4.5 text-brand-600" /> Live Orchestration Trace
+        </h3>
+        <p className="text-sm text-ink-500 mb-4">Event-driven log of agent decisions, tool calls, and database updates.</p>
         <AgentActivityFeed projectId={projectId} limit={60} />
       </div>
     </div>
