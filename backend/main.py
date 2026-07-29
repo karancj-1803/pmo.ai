@@ -7,6 +7,7 @@ from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from supabase import create_client, Client
+from langsmith import traceable
 
 # Load environment variables
 load_dotenv()
@@ -21,7 +22,8 @@ if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
 # Initialize Supabase client
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-# Helper function to call Gemini REST API directly using urllib (bypasses Python 3.14 binary compatibility issues)
+# Helper function to call Gemini REST API directly using urllib (compatible with Python 3.14)
+@traceable(name="Call Gemini Model", run_type="llm")
 def call_gemini(prompt: str, model_name: str = "gemini-3.5-flash") -> str:
     if not GEMINI_API_KEY:
         raise ValueError("Missing GEMINI_API_KEY")
@@ -106,6 +108,7 @@ def supervisor_route(action: str) -> List[str]:
     return routes.get(action, ["chat"])
 
 # ===== Planning Agent =====
+@traceable(name="Planning Agent", run_type="chain")
 async def planning_agent(project_id: str, goal: str, parent_event_id: str) -> Dict[str, Any]:
     await log_event(project_id, "planning", "agent_start", "Planning Agent invoked — decomposing project goal", parent_event_id=parent_event_id)
     
@@ -171,6 +174,7 @@ def decompose_goal_rules(goal: str) -> List[Dict[str, Any]]:
         ]
 
 # ===== Task Agent =====
+@traceable(name="Task Agent", run_type="chain")
 async def task_agent(project_id: str, phases: List[Dict[str, Any]], project_name: str, parent_event_id: str) -> Dict[str, Any]:
     await log_event(project_id, "task", "agent_start", "Task Agent invoked — generating actionable tasks", parent_event_id=parent_event_id)
     
@@ -290,6 +294,7 @@ def generate_tasks_rules(phases: List[Dict[str, Any]], project_name: str) -> Lis
     return tasks
 
 # ===== Risk Agent =====
+@traceable(name="Risk Agent", run_type="chain")
 async def risk_agent(project_id: str, parent_event_id: str) -> Dict[str, Any]:
     await log_event(project_id, "risk", "agent_start", "Risk Agent invoked — scanning for project risks", parent_event_id=parent_event_id)
     
@@ -409,6 +414,7 @@ def identify_risks_rules(tasks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return risks
 
 # ===== Report Agent =====
+@traceable(name="Report Agent", run_type="chain")
 async def report_agent(project_id: str, report_type: str, parent_event_id: str) -> Dict[str, Any]:
     await log_event(project_id, "report", "agent_start", f"Report Agent invoked — generating {report_type} report", parent_event_id=parent_event_id)
     
@@ -488,6 +494,7 @@ async def report_agent(project_id: str, report_type: str, parent_event_id: str) 
     }
 
 # ===== Knowledge Agent =====
+@traceable(name="Knowledge Agent", run_type="chain")
 async def knowledge_agent(project_id: str, filename: str, content_text: str, content_type: str, parent_event_id: str, document_id: Optional[str] = None) -> Dict[str, Any]:
     await log_event(project_id, "knowledge", "agent_start", f"Knowledge Agent invoked — processing '{filename}'", parent_event_id=parent_event_id)
     
@@ -558,6 +565,7 @@ async def knowledge_agent(project_id: str, filename: str, content_text: str, con
     }
 
 # ===== Chat Agent =====
+@traceable(name="Chat Agent", run_type="chain")
 async def chat_agent(project_id: str, question: str, parent_event_id: str) -> Dict[str, Any]:
     await log_event(project_id, "chat", "agent_start", f"Chat Agent invoked — question: '{question[:80]}'", parent_event_id=parent_event_id)
     
@@ -636,7 +644,126 @@ def synthesize_answer_rules(question: str, project: Dict[str, Any], tasks: List[
     else:
         return f"Project **{name}** is active with {len(tasks)} tasks and {len(risks)} risks. Let me know if you need specific details."
 
-# ===== Request Route Handler =====
+from typing import List, Dict, Any, Optional, TypedDict
+from langgraph.graph import StateGraph, END
+
+# ===== LangGraph State and Orchestration Schema =====
+class AgentState(TypedDict):
+    project_id: str
+    action: str
+    payload: Dict[str, Any]
+    supervisor_id: str
+    phases: List[Dict[str, Any]]
+    results: List[Dict[str, Any]]
+
+@traceable(name="Planning Node", run_type="chain")
+async def planning_node(state: AgentState) -> Dict[str, Any]:
+    goal = state["payload"].get("goal") or state["payload"].get("name") or "new project"
+    res = await planning_agent(state["project_id"], goal, state["supervisor_id"])
+    return {
+        "phases": res.get("output", {}).get("phases", []),
+        "results": state["results"] + [res]
+    }
+
+@traceable(name="Task Node", run_type="chain")
+async def task_node(state: AgentState) -> Dict[str, Any]:
+    name = state["payload"].get("name") or "Project"
+    res = await task_agent(state["project_id"], state["phases"], name, state["supervisor_id"])
+    return {
+        "results": state["results"] + [res]
+    }
+
+@traceable(name="Risk Node", run_type="chain")
+async def risk_node(state: AgentState) -> Dict[str, Any]:
+    res = await risk_agent(state["project_id"], state["supervisor_id"])
+    return {
+        "results": state["results"] + [res]
+    }
+
+@traceable(name="Report Node", run_type="chain")
+async def report_node(state: AgentState) -> Dict[str, Any]:
+    action = state["action"]
+    report_type = "status"
+    if action in ["analyze_project", "assess_risks"]:
+        report_type = "risk"
+    elif action in ["generate_report", "update_task"]:
+        report_type = state["payload"].get("reportType", "status")
+        
+    res = await report_agent(state["project_id"], report_type, state["supervisor_id"])
+    return {
+        "results": state["results"] + [res]
+    }
+
+@traceable(name="Knowledge Node", run_type="chain")
+async def knowledge_node(state: AgentState) -> Dict[str, Any]:
+    res = await knowledge_agent(
+        state["project_id"],
+        state["payload"].get("filename", ""),
+        state["payload"].get("contentText", ""),
+        state["payload"].get("contentType", ""),
+        state["supervisor_id"],
+        document_id=state["payload"].get("documentId")
+    )
+    return {
+        "results": state["results"] + [res]
+    }
+
+@traceable(name="Chat Node", run_type="chain")
+async def chat_node(state: AgentState) -> Dict[str, Any]:
+    res = await chat_agent(state["project_id"], state["payload"].get("question", ""), state["supervisor_id"])
+    return {
+        "results": state["results"] + [res]
+    }
+
+@traceable(name="Supervisor Router", run_type="chain")
+def supervisor_router(state: AgentState) -> str:
+    action = state["action"]
+    if action in ["create_project", "plan_project"]:
+        return "planning"
+    elif action == "upload_document":
+        return "knowledge"
+    elif action in ["analyze_project", "assess_risks"]:
+        return "risk"
+    elif action in ["generate_report", "update_task"]:
+        return "report"
+    elif action == "ask_question":
+        return "chat"
+    return END
+
+# Build StateGraph workflow
+workflow = StateGraph(AgentState)
+
+# Add Nodes
+workflow.add_node("planning", planning_node)
+workflow.add_node("task", task_node)
+workflow.add_node("risk", risk_node)
+workflow.add_node("report", report_node)
+workflow.add_node("knowledge", knowledge_node)
+workflow.add_node("chat", chat_node)
+
+# Set entry point
+workflow.set_conditional_entry_point(
+    supervisor_router,
+    {
+        "planning": "planning",
+        "knowledge": "knowledge",
+        "risk": "risk",
+        "report": "report",
+        "chat": "chat",
+        END: END
+    }
+)
+
+# Connect Edges
+workflow.add_edge("planning", "task")
+workflow.add_edge("task", "risk")
+workflow.add_edge("risk", "report")
+workflow.add_edge("report", END)
+workflow.add_edge("knowledge", END)
+workflow.add_edge("chat", END)
+
+# Compile Graph
+graph = workflow.compile()
 @app.post("/supervisor-agent")
 async def supervisor_agent_endpoint(request: Request):
     try:
@@ -661,52 +788,18 @@ async def supervisor_agent_endpoint(request: Request):
         details={"action": action, "agents": agents}
     )
 
-    results = []
-    events_accumulated = []
+    initial_state = {
+        "project_id": project_id,
+        "action": action,
+        "payload": payload,
+        "supervisor_id": supervisor_id,
+        "phases": [],
+        "results": []
+    }
 
     try:
-        if action in ["create_project", "plan_project"]:
-            goal = payload.get("goal") or payload.get("name") or "new project"
-            name = payload.get("name") or "Project"
-            
-            planning = await planning_agent(project_id, goal, supervisor_id)
-            results.append(planning)
-            
-            task = await task_agent(project_id, planning["output"]["phases"], name, supervisor_id)
-            results.append(task)
-            
-            risk = await risk_agent(project_id, supervisor_id)
-            results.append(risk)
-            
-            report = await report_agent(project_id, "status", supervisor_id)
-            results.append(report)
-            
-        elif action == "upload_document":
-            knowledge = await knowledge_agent(
-                project_id,
-                payload.get("filename", ""),
-                payload.get("contentText", ""),
-                payload.get("contentType", ""),
-                supervisor_id,
-                document_id=payload.get("documentId")
-            )
-            results.append(knowledge)
-            
-        elif action in ["analyze_project", "assess_risks"]:
-            risk = await risk_agent(project_id, supervisor_id)
-            results.append(risk)
-            
-            report = await report_agent(project_id, "risk", supervisor_id)
-            results.append(report)
-            
-        elif action in ["generate_report", "update_task"]:
-            report = await report_agent(project_id, payload.get("reportType", "status"), supervisor_id)
-            results.append(report)
-            
-        elif action == "ask_question":
-            chat = await chat_agent(project_id, payload.get("question", ""), supervisor_id)
-            results.append(chat)
-
+        final_state = await graph.ainvoke(initial_state)
+        results = final_state.get("results", [])
     except Exception as e:
         await log_event(
             project_id=project_id,

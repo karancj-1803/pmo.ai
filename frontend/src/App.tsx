@@ -315,7 +315,7 @@ function CreateProjectModal({ open, onClose, onCreated }: { open: boolean; onClo
       }
     >
       <div className="space-y-4">
-        <div className="flex items-start gap-2 p-3 rounded-lg bg-brand-50 border border-brand-100 text-sm text-brand-800">
+        <div className="flex items-start gap-2 p-3 rounded-lg bg-brand-50 dark:bg-brand-950/20 border border-brand-100 dark:border-brand-900/30 text-sm text-brand-800 dark:text-brand-300">
           <Sparkles className="w-4 h-4 mt-0.5 shrink-0" />
           <p>When you create a project, the <strong>Supervisor Agent</strong> autonomously invokes the Planning, Task, Risk, and Report agents to build a full project plan.</p>
         </div>
@@ -478,6 +478,9 @@ function OverviewTab({ project, onChange }: { project: Project; onChange: () => 
   }
 
   const sm = PROJECT_STATUS_META[project.status];
+  const calculatedProgress = taskCounts.total > 0 ? Math.round((taskCounts.done / taskCounts.total) * 105 / 105 * 100) : 0; // standard round formula
+  const displayProgress = Math.min(calculatedProgress, 100);
+
   return (
     <div className="space-y-5 animate-fadeIn">
       <div className="grid md:grid-cols-3 gap-4">
@@ -485,8 +488,8 @@ function OverviewTab({ project, onChange }: { project: Project; onChange: () => 
           <p className="text-xs text-ink-500 mb-2">Project Status</p>
           <Badge className={sm.badge}><span className={`w-1.5 h-1.5 rounded-full ${sm.dot}`} /> {sm.label}</Badge>
           <div className="mt-4">
-            <div className="flex justify-between text-xs text-ink-500 mb-1"><span>Progress</span><span className="font-semibold text-ink-700">{project.progress}%</span></div>
-            <ProgressBar value={project.progress} />
+            <div className="flex justify-between text-xs text-ink-500 mb-1"><span>Progress</span><span className="font-semibold text-ink-700">{displayProgress}%</span></div>
+            <ProgressBar value={displayProgress} />
           </div>
         </div>
         <div className="card p-5">
@@ -552,7 +555,6 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
 function TasksTab({ projectId }: { projectId: string }) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [projectProgress, setProjectProgress] = useState(0);
   const [draggedOverColumn, setDraggedOverColumn] = useState<string | null>(null);
 
   // Filter states
@@ -567,11 +569,6 @@ function TasksTab({ projectId }: { projectId: string }) {
     // Fetch tasks
     const { data } = await supabase.from('tasks').select('*').eq('project_id', projectId).order('created_at', { ascending: true });
     setTasks((data as Task[]) ?? []);
-    
-    // Fetch project progress
-    const { data: proj } = await supabase.from('projects').select('progress').eq('id', projectId).maybeSingle();
-    if (proj) setProjectProgress(proj.progress);
-    
     if (!silent) setLoading(false);
   }, [projectId]);
 
@@ -582,14 +579,16 @@ function TasksTab({ projectId }: { projectId: string }) {
     setTasks(prev => prev.map(t => t.id === id ? { ...t, status } : t));
     try {
       await supabase.from('tasks').update({ status }).eq('id', id);
-      const { data: progRes } = await supabase.rpc('recompute_project_progress', { p_project_id: projectId });
-      if (progRes !== undefined) setProjectProgress(progRes);
+      await supabase.rpc('recompute_project_progress', { p_project_id: projectId });
       load(true);
     } catch (e) {
       console.error(e);
       load();
     }
   }
+
+  // Calculate project progress dynamically from tasks
+  const projectProgress = tasks.length > 0 ? Math.round((tasks.filter(t => t.status === 'done').length / tasks.length) * 100) : 0;
 
   // Get unique agents dynamically
   const uniqueAgents = Array.from(new Set(tasks.map((t) => t.assignee).filter(Boolean))) as string[];
