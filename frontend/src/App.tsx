@@ -15,7 +15,7 @@ import { AgentThinking } from '@/components/AgentThinking';
 import {
   Plus, FolderKanban, Workflow, Brain, ListChecks, BookOpen, ShieldAlert, FileText,
   MessageSquare, ArrowLeft, Upload, Sparkles, TrendingUp, AlertTriangle, CheckCircle2,
-  Clock, Calendar, DollarSign, Tag, Activity, Send, RefreshCw, Trash2, FileUp,
+  Clock, Calendar, DollarSign, Tag, Activity, Send, RefreshCw, Trash2, FileUp, Search,
 } from 'lucide-react';
 
 type View = { name: 'dashboard' } | { name: 'project'; id: string };
@@ -921,6 +921,145 @@ function AgentsTab({ projectId }: { projectId: string }) {
   );
 }
 
+// ===== Helper: Pure React Markdown Renderer =====
+function renderMarkdown(text: string) {
+  const lines = text.split('\n');
+  const elements: React.ReactNode[] = [];
+  let inList = false;
+  let listItems: React.ReactNode[] = [];
+  let listType: 'ul' | 'ol' | null = null;
+
+  const parseInline = (str: string): React.ReactNode[] => {
+    const parts = str.split('**');
+    return parts.map((part, idx) => {
+      if (idx % 2 === 1) {
+        return <strong key={idx} className="font-semibold text-ink-950">{part}</strong>;
+      }
+      return part;
+    });
+  };
+
+  lines.forEach((line, lineIdx) => {
+    const trimmed = line.trim();
+    const olMatch = trimmed.match(/^(\d+)\.\s+(.*)$/);
+    const ulMatch = trimmed.match(/^[-*]\s+(.*)$/);
+
+    if (olMatch) {
+      if (listType !== 'ol') {
+        if (inList) {
+          elements.push(listType === 'ul' 
+            ? <ul key={`ul-${lineIdx}`} className="list-disc pl-5 my-2 space-y-1.5">{listItems}</ul> 
+            : <ol key={`ol-${lineIdx}`} className="list-decimal pl-5 my-2 space-y-1.5">{listItems}</ol>
+          );
+        }
+        inList = true;
+        listItems = [];
+        listType = 'ol';
+      }
+      listItems.push(<li key={`li-${lineIdx}`} className="text-sm text-ink-800">{parseInline(olMatch[2])}</li>);
+    } else if (ulMatch) {
+      if (listType !== 'ul') {
+        if (inList) {
+          elements.push(listType === 'ul' 
+            ? <ul key={`ul-${lineIdx}`} className="list-disc pl-5 my-2 space-y-1.5">{listItems}</ul> 
+            : <ol key={`ol-${lineIdx}`} className="list-decimal pl-5 my-2 space-y-1.5">{listItems}</ol>
+          );
+        }
+        inList = true;
+        listItems = [];
+        listType = 'ul';
+      }
+      listItems.push(<li key={`li-${lineIdx}`} className="text-sm text-ink-800">{parseInline(ulMatch[1])}</li>);
+    } else {
+      if (inList) {
+        elements.push(listType === 'ul' 
+          ? <ul key={`ul-${lineIdx}`} className="list-disc pl-5 my-2 space-y-1.5">{listItems}</ul> 
+          : <ol key={`ol-${lineIdx}`} className="list-decimal pl-5 my-2 space-y-1.5">{listItems}</ol>
+        );
+        inList = false;
+        listType = null;
+        listItems = [];
+      }
+      if (trimmed.length > 0) {
+        elements.push(<p key={lineIdx} className="mb-2 last:mb-0 text-sm text-ink-800 leading-relaxed">{parseInline(line)}</p>);
+      } else {
+        elements.push(<div key={lineIdx} className="h-2" />);
+      }
+    }
+  });
+
+  if (inList) {
+    elements.push(listType === 'ul' 
+      ? <ul key="ul-end" className="list-disc pl-5 my-2 space-y-1.5">{listItems}</ul> 
+      : <ol key="ol-end" className="list-decimal pl-5 my-2 space-y-1.5">{listItems}</ol>
+    );
+  }
+
+  return <>{elements}</>;
+}
+
+// ===== Helper: Typing Animation Component =====
+function TypedText({ text, speed = 15 }: { text: string; speed?: number }) {
+  const [displayedText, setDisplayedText] = useState('');
+  
+  useEffect(() => {
+    const words = text.split(' ');
+    let index = 0;
+    setDisplayedText('');
+    const interval = setInterval(() => {
+      setDisplayedText((prev) => prev + (index === 0 ? '' : ' ') + words[index]);
+      index++;
+      if (index >= words.length) {
+        clearInterval(interval);
+      }
+    }, speed);
+    return () => clearInterval(interval);
+  }, [text, speed]);
+
+  return <div className="space-y-2">{renderMarkdown(displayedText)}</div>;
+}
+
+// ===== Helper: Thinking / Searching Loader Bubble =====
+function ThinkingBubble() {
+  const [step, setStep] = useState(0);
+  const steps = [
+    { text: 'Supervisor routing request...', icon: <Workflow className="w-4 h-4 text-brand-600 animate-spin" /> },
+    { text: 'Chat Agent searching requirements & knowledge base...', icon: <Search className="w-4 h-4 text-accent-600 animate-pulse" /> },
+    { text: 'Fetching document content context...', icon: <BookOpen className="w-4 h-4 text-brand-600" /> },
+    { text: 'Gemini reasoning & generating response...', icon: <Sparkles className="w-4 h-4 text-warning-500 animate-bounce" /> }
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setStep((s) => (s < steps.length - 1 ? s + 1 : s));
+    }, 1500);
+    return () => clearInterval(interval);
+  }, []);
+
+  const current = steps[step];
+
+  return (
+    <div className="flex gap-3 animate-slideUp">
+      <div className="w-8 h-8 rounded-lg shrink-0 flex items-center justify-center bg-brand-50 border border-brand-100 shadow-sm text-brand-600">
+        <Sparkles className="w-4 h-4 text-brand-600 animate-pulse" />
+      </div>
+      <div className="max-w-[75%] rounded-2xl px-4 py-3 bg-brand-50/30 border border-brand-100/50 shadow-sm flex items-center gap-3">
+        <div className="flex items-center justify-center w-7 h-7 rounded-full bg-white border border-brand-100 shadow-xs shrink-0">
+          {current.icon}
+        </div>
+        <div className="space-y-1">
+          <p className="text-sm font-medium text-ink-700 animate-pulse">{current.text}</p>
+          <div className="flex gap-1 items-center pl-0.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-brand-500 animate-bounce" style={{ animationDelay: '0ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-brand-500 animate-bounce" style={{ animationDelay: '150ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-brand-500 animate-bounce" style={{ animationDelay: '300ms' }} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ===== Chat Tab =====
 function ChatTab({ projectId }: { projectId: string }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -936,7 +1075,7 @@ function ChatTab({ projectId }: { projectId: string }) {
   }, [projectId]);
 
   useEffect(() => { load(); }, [load]);
-  useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }); }, [messages]);
+  useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' }); }, [messages, busy]);
 
   async function send() {
     if (!input.trim() || busy) return;
@@ -950,7 +1089,7 @@ function ChatTab({ projectId }: { projectId: string }) {
       const res = await callSupervisor('ask_question', projectId, { question });
       const answer = res.results.find((r) => r.agent === 'chat')?.summary ?? 'I could not process that request.';
       await supabase.from('chat_messages').insert({ project_id: projectId, role: 'assistant', content: answer, agent_source: 'chat' });
-      setMessages((m) => [...m, { id: 'a-' + Date.now(), project_id: projectId, role: 'assistant', content: answer, agent_source: 'chat', metadata: {}, created_at: new Date().toISOString() }]);
+      setMessages((m) => [...m, { id: 'a-' + Date.now(), project_id: projectId, role: 'assistant', content: answer, agent_source: 'chat', metadata: { isNew: true }, created_at: new Date().toISOString() }]);
     } catch (e) {
       setMessages((m) => [...m, { id: 'e-' + Date.now(), project_id: projectId, role: 'assistant', content: `Error: ${e instanceof Error ? e.message : 'unknown'}`, agent_source: 'chat', metadata: {}, created_at: new Date().toISOString() }]);
     } finally {
@@ -975,7 +1114,10 @@ function ChatTab({ projectId }: { projectId: string }) {
             </div>
           </div>
         ) : (
-          messages.map((m) => <ChatBubble key={m.id} message={m} />)
+          <>
+            {messages.map((m) => <ChatBubble key={m.id} message={m} />)}
+            {busy && <ThinkingBubble />}
+          </>
         )}
       </div>
       <div className="border-t border-ink-100 pt-3 flex gap-2 items-end">
@@ -997,13 +1139,23 @@ function ChatTab({ projectId }: { projectId: string }) {
 
 function ChatBubble({ message }: { message: ChatMessage }) {
   const isUser = message.role === 'user';
+  const isNewAssistant = !isUser && message.metadata?.isNew;
+
   return (
     <div className={`flex gap-3 ${isUser ? 'flex-row-reverse' : ''} animate-slideUp`}>
-      <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center ${isUser ? 'bg-ink-200 text-ink-600' : 'bg-brand-600 text-white'}`}>
+      <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center ${isUser ? 'bg-ink-200 text-ink-600 border border-ink-300/40 shadow-sm' : 'bg-brand-600 text-white shadow-sm'}`}>
         {isUser ? <span className="text-xs font-bold">You</span> : <MessageSquare className="w-4 h-4" />}
       </div>
-      <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${isUser ? 'bg-ink-900 text-white' : 'bg-white border border-ink-100 text-ink-800'}`}>
-        <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
+      <div className={`max-w-[75%] rounded-2xl px-4 py-3 ${
+        isUser 
+          ? 'bg-ink-900 text-white shadow-md' 
+          : 'bg-white border border-ink-100 text-ink-800 shadow-sm hover:border-ink-200 transition-all duration-300'
+      }`}>
+        {isNewAssistant ? (
+          <TypedText text={message.content} />
+        ) : (
+          <div className="space-y-2">{renderMarkdown(message.content)}</div>
+        )}
       </div>
     </div>
   );
