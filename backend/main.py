@@ -174,13 +174,29 @@ def decompose_goal_rules(goal: str) -> List[Dict[str, Any]]:
 async def task_agent(project_id: str, phases: List[Dict[str, Any]], project_name: str, parent_event_id: str) -> Dict[str, Any]:
     await log_event(project_id, "task", "agent_start", "Task Agent invoked — generating actionable tasks", parent_event_id=parent_event_id)
     
+    # Retrieve project description and goal to contextualize task generation
+    project_desc = ""
+    project_goal = ""
+    try:
+        proj_res = supabase.table("projects").select("name, description, goal").eq("id", project_id).maybeSingle().execute()
+        if proj_res and proj_res.data:
+            project_name = proj_res.data.get("name", project_name)
+            project_desc = proj_res.data.get("description", "")
+            project_goal = proj_res.data.get("goal", "")
+    except Exception as e:
+        print(f"Failed to fetch project context: {e}")
+
     tasks = []
     if GEMINI_API_KEY:
         try:
             prompt = (
-                f"For the project '{project_name}' and the following phases:\n"
-                f"{json.dumps(phases)}\n"
-                f"Generate 2 to 3 distinct actionable tasks for each phase. "
+                f"For the project '{project_name}' with the following details:\n"
+                f"Goal: {project_goal}\n"
+                f"Description: {project_desc}\n\n"
+                f"And the planned phases:\n"
+                f"{json.dumps(phases)}\n\n"
+                f"Generate 2 to 3 distinct actionable, project-specific tasks for each phase. "
+                f"Tasks must directly target the project goals and description, rather than being generic placeholders. "
                 f"Return a raw valid JSON list of objects. Each object should have: "
                 f"title (string, format: 'Phase Name: Actionable Task Title'), "
                 f"description (string), "
