@@ -145,9 +145,10 @@ export function AgentThinking({ projectId }: { projectId: string }) {
         // Dynamic Input Received extraction
         let inputReceived = 'Project goals & specifications';
         if (name === 'planning') {
-          const planTool = toolEvs.find(t => t.details?.input?.goal);
-          if (planTool?.details?.input?.goal) {
-            inputReceived = `Goal: "${planTool.details.input.goal}"`;
+          const planTool = toolEvs.find(t => (t.details as any)?.input?.goal);
+          const goal = (planTool?.details as any)?.input?.goal;
+          if (goal) {
+            inputReceived = `Goal: "${goal}"`;
           }
         } else if (name === 'knowledge') {
           const knowStart = agentEvents.find(e => e.message.includes('processing'));
@@ -279,28 +280,29 @@ export function AgentThinking({ projectId }: { projectId: string }) {
         const Icon = AGENT_ICON[agent.name] ?? Workflow;
         
         // Custom color states matching UI tags
+        // Custom color states matching UI tags
         const statusColors = agent.status === 'Completed' 
-          ? 'bg-accent-50 text-accent-700 border-accent-100/50' 
-          : 'bg-brand-50 text-brand-700 border-brand-100/50 animate-pulse';
+          ? 'bg-accent-50 dark:bg-accent-950/35 text-accent-700 dark:text-accent-400 border-accent-100/50 dark:border-accent-900/30' 
+          : 'bg-brand-50 dark:bg-brand-950/35 text-brand-700 dark:text-brand-400 border-brand-100/50 dark:border-brand-900/30 animate-pulse';
 
         return (
           <div
             key={agent.name}
-            className="relative overflow-hidden bg-white/60 backdrop-blur-md border border-white/50 shadow-glow rounded-xl hover:shadow-cardHover transition-all duration-300 animate-slideUp"
+            className="relative overflow-hidden bg-white/60 dark:bg-ink-900/30 backdrop-blur-md border border-white/50 dark:border-ink-800/40 shadow-glow rounded-xl hover:shadow-cardHover transition-all duration-300 animate-slideUp"
             style={{ animationDelay: `${idx * 40}ms` }}
           >
             {/* Glassmorphism Header */}
             <div
               onClick={() => toggleExpand(agent.name)}
-              className="flex flex-wrap items-center justify-between gap-4 p-4 cursor-pointer hover:bg-white/30 transition-colors duration-200 select-none"
+              className="flex flex-wrap items-center justify-between gap-4 p-4 cursor-pointer hover:bg-white/30 dark:hover:bg-ink-800/20 transition-colors duration-200 select-none"
             >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-ink-50 text-ink-700 flex items-center justify-center border border-ink-100/20 shadow-sm">
+                <div className="w-10 h-10 rounded-xl bg-ink-50 dark:bg-ink-950/50 text-ink-700 dark:text-ink-400 flex items-center justify-center border border-ink-100/20 dark:border-ink-800/40 shadow-sm">
                   <Icon className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-ink-900 text-sm leading-tight">{agent.label}</h4>
-                  <p className="text-[11px] text-ink-400 mt-0.5">{agent.role}</p>
+                  <h4 className="font-bold text-ink-900 dark:text-white text-sm leading-tight">{agent.label}</h4>
+                  <p className="text-[11px] text-ink-400 dark:text-ink-550 mt-0.5">{agent.role}</p>
                 </div>
               </div>
 
@@ -317,12 +319,12 @@ export function AgentThinking({ projectId }: { projectId: string }) {
 
                 {/* Collapsed view execution time preview */}
                 {!isExp && (
-                  <span className="hidden sm:inline-flex items-center gap-1 text-[11px] text-ink-400 bg-ink-50/50 px-2 py-0.5 rounded border border-ink-100/20">
+                  <span className="hidden sm:inline-flex items-center gap-1 text-[11px] text-ink-400 dark:text-ink-500 bg-ink-50/50 dark:bg-ink-950/40 px-2 py-0.5 rounded border border-ink-100/20 dark:border-ink-850/40">
                     <Clock className="w-3 h-3" /> {agent.executionTime}
                   </span>
                 )}
 
-                <div className="text-ink-400 hover:text-ink-700">
+                <div className="text-ink-400 hover:text-ink-700 dark:hover:text-white">
                   {isExp ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                 </div>
               </div>
@@ -330,35 +332,35 @@ export function AgentThinking({ projectId }: { projectId: string }) {
 
             {/* Expandable Content Panel */}
             {isExp && (
-              <div className="border-t border-ink-100/30 bg-white/20 p-5 space-y-4 text-xs md:text-sm text-ink-700 leading-relaxed animate-fadeIn">
+              <div className="border-t border-ink-100/30 dark:border-ink-850/40 bg-white/20 dark:bg-ink-950/15 p-5 space-y-4 text-xs md:text-sm text-ink-700 dark:text-ink-200 leading-relaxed animate-fadeIn">
                 {/* Objective */}
                 <div>
-                  <div className="flex items-center gap-1.5 font-bold text-ink-900 mb-1">
+                  <div className="flex items-center gap-1.5 font-bold text-ink-900 dark:text-white mb-1">
                     <Target className="w-4 h-4 text-brand-500" />
                     <span>Objective</span>
                   </div>
-                  <p className="pl-5.5 text-ink-600">{agent.objective}</p>
+                  <p className="pl-5.5 text-ink-600 dark:text-ink-300">{agent.objective}</p>
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-4">
                   {/* Input Received */}
                   <div>
-                    <div className="flex items-center gap-1.5 font-bold text-ink-900 mb-1">
+                    <div className="flex items-center gap-1.5 font-bold text-ink-900 dark:text-white mb-1">
                       <LogIn className="w-4 h-4 text-warn-500" />
                       <span>Input Received</span>
                     </div>
-                    <div className="pl-5.5 text-ink-600 bg-ink-50/40 border border-ink-100/30 rounded-lg p-2.5 max-w-full font-mono text-[11px] truncate">
+                    <div className="pl-5.5 text-ink-600 dark:text-ink-300 bg-ink-50/40 dark:bg-ink-950/30 border border-ink-100/30 dark:border-ink-800/40 rounded-lg p-2.5 max-w-full font-mono text-[11px] truncate">
                       {agent.input}
                     </div>
                   </div>
 
                   {/* Execution Timing */}
                   <div>
-                    <div className="flex items-center gap-1.5 font-bold text-ink-900 mb-1">
+                    <div className="flex items-center gap-1.5 font-bold text-ink-900 dark:text-white mb-1">
                       <Clock className="w-4 h-4 text-accent-500" />
                       <span>Execution Time</span>
                     </div>
-                    <div className="pl-5.5 text-ink-600 p-2 text-sm font-semibold flex items-center gap-1">
+                    <div className="pl-5.5 text-ink-600 dark:text-ink-300 p-2 text-sm font-semibold flex items-center gap-1">
                       {agent.executionTime}
                     </div>
                   </div>
@@ -366,11 +368,11 @@ export function AgentThinking({ projectId }: { projectId: string }) {
 
                 {/* Actions Performed */}
                 <div>
-                  <div className="flex items-center gap-1.5 font-bold text-ink-900 mb-1.5">
+                  <div className="flex items-center gap-1.5 font-bold text-ink-900 dark:text-white mb-1.5">
                     <Activity className="w-4 h-4 text-brand-500" />
                     <span>Actions Performed</span>
                   </div>
-                  <ul className="pl-5.5 space-y-1 list-disc text-ink-600">
+                  <ul className="pl-5.5 space-y-1 list-disc text-ink-600 dark:text-ink-300">
                     {agent.actions.map((act, i) => (
                       <li key={i}>{act}</li>
                     ))}
@@ -379,11 +381,11 @@ export function AgentThinking({ projectId }: { projectId: string }) {
 
                 {/* Output Generated */}
                 <div>
-                  <div className="flex items-center gap-1.5 font-bold text-ink-900 mb-1.5">
+                  <div className="flex items-center gap-1.5 font-bold text-ink-900 dark:text-white mb-1.5">
                     <LogOut className="w-4 h-4 text-accent-500" />
                     <span>Output Generated</span>
                   </div>
-                  <ul className="pl-5.5 space-y-1 list-disc font-medium text-ink-800">
+                  <ul className="pl-5.5 space-y-1 list-disc font-medium text-ink-800 dark:text-ink-200">
                     {agent.output.map((out, i) => (
                       <li key={i}>{out}</li>
                     ))}

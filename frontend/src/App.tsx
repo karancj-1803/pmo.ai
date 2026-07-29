@@ -15,7 +15,7 @@ import { AgentThinking } from '@/components/AgentThinking';
 import {
   Plus, FolderKanban, Workflow, Brain, ListChecks, BookOpen, ShieldAlert, FileText,
   MessageSquare, ArrowLeft, Upload, Sparkles, TrendingUp, AlertTriangle, CheckCircle2,
-  Clock, Calendar, DollarSign, Tag, Activity, Send, RefreshCw, Trash2, FileUp, Search,
+  Clock, Calendar, DollarSign, Tag, Activity, Send, RefreshCw, Trash2, FileUp, Search, Sun, Moon,
 } from 'lucide-react';
 
 type View = { name: 'dashboard' } | { name: 'project'; id: string };
@@ -30,6 +30,21 @@ export default function App() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('theme');
+    if (saved) return saved === 'dark';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [darkMode]);
 
   const loadProjects = useCallback(async () => {
     setLoadingProjects(true);
@@ -41,8 +56,8 @@ export default function App() {
   useEffect(() => { loadProjects(); }, [loadProjects]);
 
   return (
-    <div className="min-h-screen flex bg-ink-50">
-      <Sidebar view={view} setView={setView} projectCount={projects.length} />
+    <div className="min-h-screen flex bg-ink-50 dark:bg-ink-950 text-ink-900 dark:text-ink-50 transition-colors duration-200">
+      <Sidebar view={view} setView={setView} projectCount={projects.length} darkMode={darkMode} setDarkMode={setDarkMode} />
       <main className="flex-1 min-w-0 flex flex-col">
         {view.name === 'dashboard' && (
           <Dashboard
@@ -71,7 +86,7 @@ export default function App() {
 }
 
 // ===== Sidebar =====
-function Sidebar({ view, setView, projectCount }: { view: View; setView: (v: View) => void; projectCount: number }) {
+function Sidebar({ view, setView, projectCount, darkMode, setDarkMode }: { view: View; setView: (v: View) => void; projectCount: number; darkMode: boolean; setDarkMode: (d: boolean) => void }) {
   return (
     <aside className="w-60 shrink-0 bg-ink-950 text-ink-200 flex flex-col h-screen sticky top-0">
       <div className="px-5 py-5 flex items-center gap-2.5 border-b border-white/5">
@@ -112,10 +127,17 @@ function Sidebar({ view, setView, projectCount }: { view: View; setView: (v: Vie
         </div>
       </div>
 
-      <div className="px-4 py-3 border-t border-white/5">
-        <p className="text-[10px] text-ink-500 leading-relaxed">
-          LangChain + LangGraph powered multi-agent orchestration
+      <div className="px-4 py-3 border-t border-white/5 flex items-center justify-between">
+        <p className="text-[10px] text-ink-500 leading-relaxed max-w-[120px]">
+          LangChain + LangGraph powered
         </p>
+        <button
+          onClick={() => setDarkMode(!darkMode)}
+          className="p-1.5 rounded-lg text-ink-400 hover:bg-white/5 hover:text-white transition-colors"
+          title="Toggle Light/Dark Theme"
+        >
+          {darkMode ? <Sun className="w-4.5 h-4.5 text-warning-400" /> : <Moon className="w-4.5 h-4.5" />}
+        </button>
       </div>
     </aside>
   );
@@ -136,11 +158,11 @@ function Dashboard({
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <header className="sticky top-0 z-10 bg-ink-50/85 backdrop-blur-md border-b border-ink-100">
+      <header className="sticky top-0 z-10 bg-ink-50/85 dark:bg-ink-950/85 backdrop-blur-md border-b border-ink-100 dark:border-ink-800">
         <div className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-ink-900">Projects</h1>
-            <p className="text-sm text-ink-500 mt-0.5">Autonomous multi-agent project management</p>
+            <h1 className="text-xl font-bold text-ink-900 dark:text-white">Projects</h1>
+            <p className="text-sm text-ink-500 dark:text-ink-400 mt-0.5">Autonomous multi-agent project management</p>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={onRefresh} className="btn-ghost" disabled={loading}>
@@ -186,17 +208,17 @@ function Dashboard({
 
 function StatCard({ icon, label, value, tone }: { icon: React.ReactNode; label: string; value: string | number; tone: 'brand' | 'accent' | 'warn' | 'danger' }) {
   const tones = {
-    brand: 'bg-brand-50 text-brand-600',
-    accent: 'bg-accent-50 text-accent-600',
-    warn: 'bg-warn-50 text-warn-600',
-    danger: 'bg-danger-50 text-danger-600',
+    brand: 'bg-brand-50 text-brand-600 dark:bg-brand-950/40 dark:text-brand-400',
+    accent: 'bg-accent-50 text-accent-600 dark:bg-accent-950/40 dark:text-accent-400',
+    warn: 'bg-warn-50 text-warn-600 dark:bg-warn-950/40 dark:text-warn-400',
+    danger: 'bg-danger-50 text-danger-600 dark:bg-danger-950/40 dark:text-danger-400',
   };
   return (
     <div className="card p-4 flex items-center gap-3">
       <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${tones[tone]}`}>{icon}</div>
       <div>
-        <p className="text-2xl font-bold text-ink-900 leading-none">{value}</p>
-        <p className="text-xs text-ink-500 mt-1">{label}</p>
+        <p className="text-2xl font-bold text-ink-900 dark:text-white leading-none">{value}</p>
+        <p className="text-xs text-ink-500 dark:text-ink-400 mt-1">{label}</p>
       </div>
     </div>
   );
@@ -208,8 +230,8 @@ function ProjectCard({ project, onOpen }: { project: Project; onOpen: () => void
     <button onClick={onOpen} className="card card-hover p-5 text-left group animate-slideUp">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="min-w-0">
-          <h3 className="font-semibold text-ink-900 group-hover:text-brand-700 transition-colors truncate">{project.name}</h3>
-          {project.description && <p className="text-sm text-ink-500 mt-1 line-clamp-2">{project.description}</p>}
+          <h3 className="font-semibold text-ink-900 dark:text-white group-hover:text-brand-700 dark:group-hover:text-brand-400 transition-colors truncate">{project.name}</h3>
+          {project.description && <p className="text-sm text-ink-500 dark:text-ink-400 mt-1 line-clamp-2">{project.description}</p>}
         </div>
         <Badge className={sm.badge}><span className={`w-1.5 h-1.5 rounded-full ${sm.dot}`} /> {sm.label}</Badge>
       </div>
@@ -385,13 +407,13 @@ function ProjectDetail({ projectId, onBack, onCreate }: { projectId: string; onB
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
-      <header className="sticky top-0 z-10 bg-ink-50/85 backdrop-blur-md border-b border-ink-100">
+      <header className="sticky top-0 z-10 bg-ink-50/85 dark:bg-ink-950/85 backdrop-blur-md border-b border-ink-100 dark:border-ink-800">
         <div className="max-w-6xl mx-auto px-6 pt-4 pb-0">
           <div className="flex items-center gap-3 mb-3">
             <button onClick={onBack} className="btn-ghost !px-2"><ArrowLeft className="w-4 h-4" /></button>
             <div className="min-w-0 flex-1">
-              <h1 className="text-xl font-bold text-ink-900 truncate">{project.name}</h1>
-              {project.description && <p className="text-sm text-ink-500 truncate">{project.description}</p>}
+              <h1 className="text-xl font-bold text-ink-900 dark:text-white truncate">{project.name}</h1>
+              {project.description && <p className="text-sm text-ink-500 dark:text-ink-400 truncate">{project.description}</p>}
             </div>
             <button onClick={onCreate} className="btn-secondary !py-2"><Plus className="w-4 h-4" /> New</button>
           </div>
@@ -403,7 +425,9 @@ function ProjectDetail({ projectId, onBack, onCreate }: { projectId: string; onB
                   key={t.id}
                   onClick={() => setTab(t.id)}
                   className={`flex items-center gap-1.5 px-3.5 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                    tab === t.id ? 'border-brand-600 text-brand-700' : 'border-transparent text-ink-500 hover:text-ink-800 hover:bg-ink-100/50'
+                    tab === t.id 
+                      ? 'border-brand-600 text-brand-700 dark:text-brand-400 dark:border-brand-500' 
+                      : 'border-transparent text-ink-500 dark:text-ink-400 hover:text-ink-800 dark:hover:text-ink-200 hover:bg-ink-100/50 dark:hover:bg-ink-900/50'
                   }`}
                 >
                   <Icon className="w-4 h-4" /> {t.label}
@@ -516,9 +540,9 @@ function MiniStat({ label, value, tone }: { label: string; value: number; tone: 
 
 function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="flex items-center gap-2.5 py-1.5 border-b border-ink-50 last:border-0">
+    <div className="flex items-center gap-2.5 py-1.5">
       <span className="text-ink-400">{icon}</span>
-      <span className="text-ink-500">{label}</span>
+      <span className="text-ink-550">{label}</span>
       <span className="ml-auto font-medium text-ink-800 text-right">{value}</span>
     </div>
   );
@@ -528,81 +552,456 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
 function TasksTab({ projectId }: { projectId: string }) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'todo' | 'in_progress' | 'done' | 'blocked'>('all');
+  const [projectProgress, setProjectProgress] = useState(0);
+  const [draggedOverColumn, setDraggedOverColumn] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  // Filter states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [priorityFilter, setPriorityFilter] = useState<string>('all');
+  const [agentFilter, setAgentFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [dueDateFilter, setDueDateFilter] = useState<string>('all');
+
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    // Fetch tasks
     const { data } = await supabase.from('tasks').select('*').eq('project_id', projectId).order('created_at', { ascending: true });
     setTasks((data as Task[]) ?? []);
-    setLoading(false);
+    
+    // Fetch project progress
+    const { data: proj } = await supabase.from('projects').select('progress').eq('id', projectId).maybeSingle();
+    if (proj) setProjectProgress(proj.progress);
+    
+    if (!silent) setLoading(false);
   }, [projectId]);
 
   useEffect(() => { load(); }, [load]);
 
   async function updateStatus(id: string, status: Task['status']) {
-    await supabase.from('tasks').update({ status }).eq('id', id);
-    await supabase.rpc('recompute_project_progress', { p_project_id: projectId });
-    load();
+    // Optimistic local state update for buttery performance!
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, status } : t));
+    try {
+      await supabase.from('tasks').update({ status }).eq('id', id);
+      const { data: progRes } = await supabase.rpc('recompute_project_progress', { p_project_id: projectId });
+      if (progRes !== undefined) setProjectProgress(progRes);
+      load(true);
+    } catch (e) {
+      console.error(e);
+      load();
+    }
   }
 
-  const filtered = filter === 'all' ? tasks : tasks.filter((t) => t.status === filter);
+  // Get unique agents dynamically
+  const uniqueAgents = Array.from(new Set(tasks.map((t) => t.assignee).filter(Boolean))) as string[];
+
+  // Filtering Logic
+  const filteredTasks = tasks.filter((t) => {
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const matchTitle = t.title.toLowerCase().includes(q);
+      const matchDesc = t.description?.toLowerCase().includes(q) ?? false;
+      if (!matchTitle && !matchDesc) return false;
+    }
+    if (priorityFilter !== 'all' && t.priority !== priorityFilter) return false;
+    if (agentFilter !== 'all' && t.assignee !== agentFilter) return false;
+    if (statusFilter !== 'all') {
+      if (statusFilter === 'todo' && t.status !== 'todo' && t.status !== 'blocked') return false;
+      if (statusFilter === 'in_progress' && t.status !== 'in_progress') return false;
+      if (statusFilter === 'review' && t.status !== 'review') return false;
+      if (statusFilter === 'done' && t.status !== 'done') return false;
+    }
+    if (dueDateFilter !== 'all') {
+      const today = new Date().toISOString().slice(0, 10);
+      if (dueDateFilter === 'overdue') {
+        if (!t.due_date || t.due_date >= today || t.status === 'done') return false;
+      } else if (dueDateFilter === 'today') {
+        if (t.due_date !== today) return false;
+      } else if (dueDateFilter === 'this_week') {
+        if (!t.due_date) return false;
+        const taskDate = new Date(t.due_date);
+        const now = new Date();
+        const nextWeek = new Date();
+        nextWeek.setDate(now.getDate() + 7);
+        if (taskDate < now || taskDate > nextWeek) return false;
+      } else if (dueDateFilter === 'none') {
+        if (t.due_date) return false;
+      }
+    }
+    return true;
+  });
+
+  // Rollups
+  const completedCount = tasks.filter((t) => t.status === 'done').length;
+  const remainingCount = tasks.filter((t) => t.status !== 'done').length;
+  const blockedCount = tasks.filter((t) => t.status === 'blocked').length;
+
+  // HTML5 Drag and Drop handlers
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    e.dataTransfer.setData('text/plain', id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent, colId: string) => {
+    e.preventDefault();
+  };
+
+  const handleDragEnter = (e: React.DragEvent, colId: string) => {
+    e.preventDefault();
+    setDraggedOverColumn(colId);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDraggedOverColumn(null);
+  };
+
+  const handleDrop = async (e: React.DragEvent, colId: string) => {
+    e.preventDefault();
+    setDraggedOverColumn(null);
+    const id = e.dataTransfer.getData('text/plain');
+    if (!id) return;
+
+    let newStatus: Task['status'] = 'todo';
+    if (colId === 'in_progress') newStatus = 'in_progress';
+    else if (colId === 'review') newStatus = 'review';
+    else if (colId === 'done') newStatus = 'done';
+    
+    // Save to Supabase and update state
+    await updateStatus(id, newStatus);
+  };
+
+  const columns = [
+    { id: 'todo', title: 'To Do', statuses: ['todo', 'blocked'] },
+    { id: 'in_progress', title: 'In Progress', statuses: ['in_progress'] },
+    { id: 'review', title: 'Review', statuses: ['review'] },
+    { id: 'done', title: 'Completed', statuses: ['done'] }
+  ];
 
   return (
-    <div className="space-y-4 animate-fadeIn">
-      <div className="flex items-center gap-2 flex-wrap">
-        {(['all', 'todo', 'in_progress', 'done', 'blocked'] as const).map((f) => (
-          <button key={f} onClick={() => setFilter(f)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${filter === f ? 'bg-ink-900 text-white' : 'bg-white border border-ink-200 text-ink-600 hover:bg-ink-50'}`}>
-            {f === 'all' ? 'All' : f === 'in_progress' ? 'In Progress' : f.charAt(0).toUpperCase() + f.slice(1)}
-            <span className="ml-1.5 text-xs opacity-60">{f === 'all' ? tasks.length : tasks.filter((t) => t.status === f).length}</span>
-          </button>
-        ))}
+    <div className="space-y-6 animate-fadeIn">
+      {/* Kanban Header Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {/* Project Progress */}
+        <div className="card p-4 flex flex-col justify-between">
+          <div>
+            <p className="text-[10px] uppercase font-bold tracking-wider text-ink-500 dark:text-ink-400">Project Progress</p>
+            <p className="text-xl font-bold text-ink-900 dark:text-white mt-1">{projectProgress}%</p>
+          </div>
+          <div className="mt-2">
+            <div className="flex justify-between text-[9px] text-ink-400 dark:text-ink-550 mb-0.5">
+              <span>Overall Completion</span>
+            </div>
+            <ProgressBar value={projectProgress} />
+          </div>
+        </div>
+
+        {/* Completed Tasks */}
+        <div className="card p-4">
+          <p className="text-[10px] uppercase font-bold tracking-wider text-ink-500 dark:text-ink-400">Completed Tasks</p>
+          <p className="text-2xl font-bold text-accent-600 dark:text-accent-400 mt-2">{completedCount}</p>
+          <p className="text-[10px] text-ink-400 dark:text-ink-500 mt-1">Ready for production</p>
+        </div>
+
+        {/* Remaining Tasks */}
+        <div className="card p-4">
+          <p className="text-[10px] uppercase font-bold tracking-wider text-ink-500 dark:text-ink-400">Remaining Tasks</p>
+          <p className="text-2xl font-bold text-brand-600 dark:text-brand-400 mt-2">{remainingCount}</p>
+          <p className="text-[10px] text-ink-400 dark:text-ink-500 mt-1">In active development</p>
+        </div>
+
+        {/* Blocked Tasks */}
+        <div className="card p-4">
+          <p className="text-[10px] uppercase font-bold tracking-wider text-ink-500 dark:text-ink-400">Blocked Tasks</p>
+          <p className={`text-2xl font-bold mt-2 ${blockedCount > 0 ? 'text-danger-600 dark:text-danger-400 animate-pulse' : 'text-ink-600 dark:text-ink-400'}`}>
+            {blockedCount}
+          </p>
+          <p className="text-[10px] text-ink-400 dark:text-ink-550 mt-1">Requires attention</p>
+        </div>
       </div>
+
+      {/* Filtering & Search Header */}
+      <div className="card p-4 bg-white/40 dark:bg-ink-900/20 backdrop-blur-md flex flex-col md:flex-row gap-4 items-center justify-between">
+        {/* Search */}
+        <div className="relative w-full md:max-w-xs">
+          <Search className="absolute left-3 top-3 w-4 h-4 text-ink-400 dark:text-ink-550" />
+          <input
+            type="text"
+            placeholder="Search tasks..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="input pl-9"
+          />
+        </div>
+
+        {/* Filters */}
+        <div className="flex flex-wrap gap-2.5 w-full md:w-auto items-center justify-end">
+          {/* Priority */}
+          <div className="flex flex-col">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-ink-400 dark:text-ink-500 mb-1">Priority</span>
+            <select
+              value={priorityFilter}
+              onChange={(e) => setPriorityFilter(e.target.value)}
+              className="text-xs font-semibold rounded-lg border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-950 text-ink-700 dark:text-ink-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+            >
+              <option value="all">All Priorities</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="critical">Critical</option>
+            </select>
+          </div>
+
+          {/* Assigned Agent */}
+          <div className="flex flex-col">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-ink-400 dark:text-ink-500 mb-1">Assigned Agent</span>
+            <select
+              value={agentFilter}
+              onChange={(e) => setAgentFilter(e.target.value)}
+              className="text-xs font-semibold rounded-lg border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-950 text-ink-700 dark:text-ink-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500/30 max-w-[130px] truncate"
+            >
+              <option value="all">All Agents</option>
+              {uniqueAgents.map((agent) => (
+                <option key={agent} value={agent}>{agent.replace(' Agent', '')}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Status */}
+          <div className="flex flex-col">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-ink-400 dark:text-ink-500 mb-1">Column Filter</span>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="text-xs font-semibold rounded-lg border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-950 text-ink-700 dark:text-ink-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+            >
+              <option value="all">All Columns</option>
+              <option value="todo">To Do</option>
+              <option value="in_progress">In Progress</option>
+              <option value="review">Review</option>
+              <option value="done">Completed</option>
+            </select>
+          </div>
+
+          {/* Due Date */}
+          <div className="flex flex-col">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-ink-400 dark:text-ink-500 mb-1">Due Date</span>
+            <select
+              value={dueDateFilter}
+              onChange={(e) => setDueDateFilter(e.target.value)}
+              className="text-xs font-semibold rounded-lg border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-950 text-ink-700 dark:text-ink-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+            >
+              <option value="all">All Dates</option>
+              <option value="overdue">Overdue</option>
+              <option value="today">Due Today</option>
+              <option value="this_week">Due This Week</option>
+              <option value="none">No Due Date</option>
+            </select>
+          </div>
+
+          {/* Reset button */}
+          {(searchQuery || priorityFilter !== 'all' || agentFilter !== 'all' || statusFilter !== 'all' || dueDateFilter !== 'all') && (
+            <button
+              onClick={() => {
+                setSearchQuery('');
+                setPriorityFilter('all');
+                setAgentFilter('all');
+                setStatusFilter('all');
+                setDueDateFilter('all');
+              }}
+              className="btn bg-ink-200 hover:bg-ink-300 dark:bg-ink-800 dark:hover:bg-ink-700 text-ink-700 dark:text-ink-200 !py-2 !px-3 mt-4 text-xs font-bold"
+            >
+              Reset
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Kanban Board columns wrapper */}
       {loading ? (
-        <div className="space-y-2">{[0,1,2,3].map((i) => <div key={i} className="skeleton h-16 rounded-lg" />)}</div>
-      ) : filtered.length === 0 ? (
-        <EmptyState icon={<ListChecks className="w-7 h-7" />} title="No tasks" description="The Task Agent will generate tasks when the project is created. You can re-run planning from the Overview tab." />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[0,1,2,3].map((i) => (
+            <div key={i} className="card p-4 space-y-3 bg-ink-50/50 dark:bg-ink-950/20">
+              <div className="skeleton h-6 w-1/3 rounded" />
+              <div className="skeleton h-28 rounded-xl" />
+              <div className="skeleton h-28 rounded-xl" />
+            </div>
+          ))}
+        </div>
       ) : (
-        <div className="space-y-2">
-          {filtered.map((t) => <TaskRow key={t.id} task={t} onStatusChange={(s) => updateStatus(t.id, s)} />)}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
+          {columns
+            .filter((c) => statusFilter === 'all' || c.id === statusFilter)
+            .map((c) => {
+              const colTasks = filteredTasks.filter((t) => c.statuses.includes(t.status));
+              const isOver = draggedOverColumn === c.id;
+
+              return (
+                <div
+                  key={c.id}
+                  onDragOver={(e) => handleDragOver(e, c.id)}
+                  onDragEnter={(e) => handleDragEnter(e, c.id)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, c.id)}
+                  className={`card p-4 flex flex-col min-h-[500px] transition-all duration-300 ${
+                    isOver 
+                      ? 'border-brand-500 bg-brand-50/10 dark:bg-brand-950/10 shadow-glow/10 scale-[1.01]' 
+                      : 'bg-white/40 dark:bg-ink-900/10 border-ink-100 dark:border-ink-800/40'
+                  }`}
+                >
+                  {/* Column Header */}
+                  <div className="flex items-center justify-between pb-3 mb-4 border-b border-ink-50 dark:border-white/5">
+                    <h3 className="font-bold text-ink-900 dark:text-white text-sm flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${
+                        c.id === 'todo' 
+                          ? 'bg-ink-400' 
+                          : c.id === 'in_progress' 
+                            ? 'bg-brand-500 animate-pulse' 
+                            : c.id === 'review' 
+                              ? 'bg-warning-500' 
+                              : 'bg-accent-500'
+                      }`} />
+                      {c.title}
+                    </h3>
+                    <span className="text-[10px] font-bold text-ink-400 dark:text-ink-500 bg-ink-50 dark:bg-ink-900/60 px-2 py-0.5 rounded-full">
+                      {colTasks.length}
+                    </span>
+                  </div>
+
+                  {/* Tasks Container */}
+                  <div className="flex-1 space-y-3">
+                    {colTasks.length === 0 ? (
+                      <div className="text-center py-8 text-xs text-ink-400 dark:text-ink-550 border border-dashed border-ink-100 dark:border-ink-800/40 rounded-xl">
+                        No tasks
+                      </div>
+                    ) : (
+                      colTasks.map((t) => (
+                        <KanbanCard
+                          key={t.id}
+                          task={t}
+                          onStatusChange={(s) => updateStatus(t.id, s)}
+                          onDragStart={(e) => handleDragStart(e, t.id)}
+                        />
+                      ))
+                    )}
+                  </div>
+                </div>
+              );
+            })}
         </div>
       )}
     </div>
   );
 }
 
-function TaskRow({ task, onStatusChange }: { task: Task; onStatusChange: (s: Task['status']) => void }) {
-  const [open, setOpen] = useState(false);
-  const sm = TASK_STATUS_META[task.status];
+function KanbanCard({ task, onStatusChange, onDragStart }: { task: Task; onStatusChange: (s: Task['status']) => void; onDragStart: (e: React.DragEvent) => void }) {
   const pm = PRIORITY_META[task.priority];
+  
+  // Parse phase prefix and actual title
+  const parts = task.title.split(':');
+  const tag = parts.length > 1 ? parts[0].trim() : '';
+  const displayTitle = parts.length > 1 ? parts.slice(1).join(':').trim() : task.title;
+
+  // Convert estimated hours to days
+  const estDays = Math.ceil(task.estimated_hours / 8);
+  const durationText = estDays > 0 ? `${estDays} Day${estDays > 1 ? 's' : ''}` : '';
+
+  // Progress mapping
+  const progressMap: Record<Task['status'], number> = {
+    todo: 0,
+    blocked: 15,
+    in_progress: 45,
+    review: 80,
+    done: 100
+  };
+  const cardProgress = progressMap[task.status];
+
+  // Overdue check
+  const isOverdue = task.due_date && task.due_date < new Date().toISOString().slice(0, 10) && task.status !== 'done';
+
   return (
-    <div className="card p-4 animate-slideUp">
-      <div className="flex items-start gap-3">
+    <div
+      draggable
+      onDragStart={onDragStart}
+      className={`card p-4 bg-white/70 dark:bg-ink-900/40 backdrop-blur-md border border-ink-100 dark:border-ink-800/80 shadow-xs hover:shadow-md cursor-grab active:cursor-grabbing transition-all duration-300 relative group select-none ${
+        task.status === 'blocked' ? 'border-danger-300 dark:border-danger-900/60 bg-danger-50/20 dark:bg-danger-950/10' : ''
+      }`}
+    >
+      <div className="flex items-start justify-between gap-2 mb-2">
+        {tag && (
+          <span className="text-[9px] font-bold uppercase tracking-wider text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-950/40 px-2 py-0.5 rounded">
+            {tag}
+          </span>
+        )}
         <select
           value={task.status}
           onChange={(e) => onStatusChange(e.target.value as Task['status'])}
-          className="mt-0.5 text-xs font-semibold rounded-md border border-ink-200 bg-white px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+          onClick={(e) => e.stopPropagation()}
+          className="text-[10px] font-semibold rounded-md border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-950 text-ink-700 dark:text-ink-300 px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-brand-500/30 cursor-pointer"
         >
           <option value="todo">To Do</option>
           <option value="in_progress">In Progress</option>
           <option value="review">Review</option>
-          <option value="done">Done</option>
+          <option value="done">Completed</option>
           <option value="blocked">Blocked</option>
         </select>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h4 className="font-medium text-ink-900">{task.title}</h4>
-            {task.agent_generated && <Badge className="bg-brand-50 text-brand-600"><Sparkles className="w-3 h-3" /> AI</Badge>}
-            <Badge className={pm.badge}>{pm.label}</Badge>
-          </div>
-          {task.description && <p className="text-sm text-ink-500 mt-1 line-clamp-2">{task.description}</p>}
-          <div className="flex items-center gap-3 mt-2 text-xs text-ink-400">
-            {task.assignee && <span>{task.assignee}</span>}
-            {task.estimated_hours > 0 && <span>{task.estimated_hours}h est.</span>}
-            {task.due_date && <span>{formatDate(task.due_date)}</span>}
-          </div>
+      </div>
+
+      <h4 className="font-semibold text-ink-900 dark:text-white text-sm leading-snug group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors mb-2">
+        {displayTitle}
+      </h4>
+
+      {task.description && (
+        <p className="text-xs text-ink-500 dark:text-ink-400 line-clamp-2 mb-3 leading-relaxed">
+          {task.description}
+        </p>
+      )}
+
+      {/* Progress bar inside card */}
+      <div className="mb-3">
+        <div className="flex justify-between text-[9px] text-ink-400 dark:text-ink-550 mb-1">
+          <span>Progress</span>
+          <span>{cardProgress}%</span>
         </div>
-        <Badge className={sm.badge}><span className={`w-1.5 h-1.5 rounded-full ${sm.dot}`} /> {sm.label}</Badge>
+        <div className="w-full bg-ink-100 dark:bg-ink-800/80 rounded-full h-1">
+          <div 
+            className={`h-1 rounded-full transition-all duration-500 ${
+              task.status === 'blocked' 
+                ? 'bg-danger-500' 
+                : task.status === 'done' 
+                  ? 'bg-accent-500' 
+                  : 'bg-brand-500'
+            }`} 
+            style={{ width: `${cardProgress}%` }}
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-y-2 gap-x-2 pt-2 border-t border-ink-50 dark:border-white/5">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <Badge className={`${pm.badge} text-[10px] px-1.5 py-0.5`}>
+            {pm.label}
+          </Badge>
+          
+          {task.assignee && (
+            <Badge className="bg-brand-50 dark:bg-brand-950/30 text-brand-700 dark:text-brand-400 text-[10px] px-1.5 py-0.5 flex items-center gap-1">
+              <Brain className="w-2.5 h-2.5 shrink-0" />
+              {task.assignee.replace(' Agent', '')}
+            </Badge>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2 text-[10px] text-ink-400 dark:text-ink-550">
+          {durationText && (
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3" /> {durationText}
+            </span>
+          )}
+          {task.due_date && (
+            <span className={`flex items-center gap-1 ${isOverdue ? 'text-danger-600 dark:text-danger-400 font-medium' : ''}`}>
+              <Calendar className="w-3 h-3" /> {formatDate(task.due_date)}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -673,7 +1072,7 @@ function DocumentsTab({ projectId }: { projectId: string }) {
         onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
         onDrop={(e) => { e.preventDefault(); setDragOver(false); if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files); }}
-        className={`card p-8 border-2 border-dashed text-center transition-colors ${dragOver ? 'border-brand-400 bg-brand-50/50' : 'border-ink-200'}`}
+        className={`card p-8 border-2 border-dashed text-center transition-colors ${dragOver ? 'border-brand-400 bg-brand-50/50 dark:bg-brand-950/20' : 'border-ink-200 dark:border-ink-800'}`}
       >
         <FileUp className="w-8 h-8 mx-auto text-ink-400 mb-2" />
         <p className="text-sm font-medium text-ink-700">{uploading ? 'Processing...' : 'Drop documents here or'}</p>
@@ -694,11 +1093,11 @@ function DocumentsTab({ projectId }: { projectId: string }) {
         <div className="space-y-2">
           {docs.map((d) => (
             <div key={d.id} className="card p-4 flex items-start gap-3 animate-slideUp">
-              <div className="w-10 h-10 rounded-lg bg-brand-50 text-brand-600 flex items-center justify-center shrink-0"><FileText className="w-5 h-5" /></div>
+              <div className="w-10 h-10 rounded-lg bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0"><FileText className="w-5 h-5" /></div>
               <div className="min-w-0 flex-1">
-                <h4 className="font-medium text-ink-900 truncate">{d.filename}</h4>
-                <p className="text-xs text-ink-400">{formatBytes(d.size_bytes)} · {formatDate(d.created_at)}</p>
-                {d.summary && <p className="text-sm text-ink-600 mt-1.5 line-clamp-2">{d.summary}</p>}
+                <h4 className="font-medium text-ink-900 dark:text-white truncate">{d.filename}</h4>
+                <p className="text-xs text-ink-400 dark:text-ink-500">{formatBytes(d.size_bytes)} · {formatDate(d.created_at)}</p>
+                {d.summary && <p className="text-sm text-ink-600 dark:text-ink-300 mt-1.5 line-clamp-2">{d.summary}</p>}
               </div>
               <button onClick={() => removeDoc(d.id)} className="btn-ghost !px-2 !py-1.5 text-ink-400 hover:text-danger-600"><Trash2 className="w-4 h-4" /></button>
             </div>
@@ -758,20 +1157,20 @@ function RisksTab({ projectId }: { projectId: string }) {
                   <span className={`mt-1 w-2 h-2 rounded-full shrink-0 ${sm.dot}`} />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className="font-medium text-ink-900">{r.title}</h4>
-                      {r.agent_generated && <Badge className="bg-brand-50 text-brand-600"><Sparkles className="w-3 h-3" /> AI</Badge>}
+                      <h4 className="font-medium text-ink-900 dark:text-white">{r.title}</h4>
+                      {r.agent_generated && <Badge className="bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400"><Sparkles className="w-3 h-3" /> AI</Badge>}
                       <Badge className={sm.badge}>{sm.label}</Badge>
                       <Badge className={rsm.badge}>{rsm.label}</Badge>
                     </div>
-                    {r.description && <p className="text-sm text-ink-500 mt-1">{r.description}</p>}
-                    {r.mitigation && <p className="text-sm text-ink-600 mt-2 bg-accent-50/60 rounded-md p-2"><strong className="text-accent-700">Mitigation:</strong> {r.mitigation}</p>}
-                    <div className="flex items-center gap-3 mt-2 text-xs text-ink-400">
+                    {r.description && <p className="text-sm text-ink-500 dark:text-ink-400 mt-1">{r.description}</p>}
+                    {r.mitigation && <p className="text-sm text-ink-600 dark:text-ink-300 mt-2 bg-accent-50/10 dark:bg-accent-900/10 rounded-md p-2 border border-accent-100/20 dark:border-accent-800/30"><strong className="text-accent-700 dark:text-accent-400">Mitigation:</strong> {r.mitigation}</p>}
+                    <div className="flex items-center gap-3 mt-2 text-xs text-ink-400 dark:text-ink-500">
                       <span>Likelihood: {r.likelihood}</span><span>Impact: {r.impact}</span>
                       {r.owner && <span>Owner: {r.owner}</span>}
                     </div>
                   </div>
                   <select value={r.status} onChange={(e) => updateStatus(r.id, e.target.value as Risk['status'])}
-                    className="text-xs font-semibold rounded-md border border-ink-200 bg-white px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-500/30">
+                    className="text-xs font-semibold rounded-md border border-ink-200 dark:border-ink-800 bg-white dark:bg-ink-950 text-ink-900 dark:text-white px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-500/30 cursor-pointer">
                     <option value="identified">Identified</option>
                     <option value="assessed">Assessed</option>
                     <option value="mitigating">Mitigating</option>
@@ -828,12 +1227,12 @@ function ReportsTab({ projectId }: { projectId: string }) {
             const tm = REPORT_TYPE_META[r.type];
             return (
               <button key={r.id} onClick={() => setSelected(r)} className="card card-hover p-4 w-full text-left flex items-center gap-3 animate-slideUp">
-                <div className="w-10 h-10 rounded-lg bg-accent-50 text-accent-600 flex items-center justify-center shrink-0"><FileText className="w-5 h-5" /></div>
+                <div className="w-10 h-10 rounded-lg bg-accent-50 dark:bg-accent-950/40 text-accent-600 dark:text-accent-400 flex items-center justify-center shrink-0"><FileText className="w-5 h-5" /></div>
                 <div className="min-w-0 flex-1">
-                  <h4 className="font-medium text-ink-900 truncate">{r.title}</h4>
-                  <p className="text-xs text-ink-400">{tm.label} · {formatDate(r.created_at)}</p>
+                  <h4 className="font-medium text-ink-900 dark:text-white truncate">{r.title}</h4>
+                  <p className="text-xs text-ink-400 dark:text-ink-500">{tm.label} · {formatDate(r.created_at)}</p>
                 </div>
-                <Badge className="bg-accent-50 text-accent-700"><Sparkles className="w-3 h-3" /> AI</Badge>
+                <Badge className="bg-accent-50 dark:bg-accent-950/40 text-accent-700 dark:text-accent-400"><Sparkles className="w-3 h-3" /> AI</Badge>
               </button>
             );
           })}
@@ -854,7 +1253,7 @@ function ReportContent({ report }: { report: Report }) {
   const health = c.health as string | undefined;
   return (
     <div className="space-y-4 text-sm">
-      <div className={`p-3 rounded-lg ${health === 'on_track' ? 'bg-accent-50 text-accent-800' : 'bg-warn-50 text-warn-800'}`}>
+      <div className={`p-3 rounded-lg ${health === 'on_track' ? 'bg-accent-50 dark:bg-accent-950/20 text-accent-800 dark:text-accent-400' : 'bg-warn-50 dark:bg-warn-950/20 text-warn-800 dark:text-warn-400'}`}>
         <strong>Project Health: {health === 'on_track' ? 'On Track' : 'At Risk'}</strong>
       </div>
       <p className="text-ink-700 leading-relaxed">{c.summary as string}</p>
@@ -900,11 +1299,11 @@ function ReportStat({ label, value }: { label: string; value: number }) {
 function AgentsTab({ projectId }: { projectId: string }) {
   return (
     <div className="space-y-4 animate-fadeIn">
-      <div className="card p-5 bg-white/60 backdrop-blur-md border border-white/50 shadow-glow">
-        <h3 className="font-semibold text-ink-900 mb-1 flex items-center gap-2">
+      <div className="card p-5 bg-white/60 dark:bg-ink-900/40 backdrop-blur-md border border-white/50 dark:border-ink-800/60 shadow-glow">
+        <h3 className="font-semibold text-ink-900 dark:text-white mb-1 flex items-center gap-2">
           <Brain className="w-4.5 h-4.5 text-brand-600 animate-pulse" /> Agent Thinking
         </h3>
-        <p className="text-sm text-ink-500 mb-4">
+        <p className="text-sm text-ink-500 dark:text-ink-400 mb-4">
           High-level execution summary showing the business objectives, inputs, actions, and outputs of each agent in execution order.
         </p>
         <AgentThinking projectId={projectId} />
@@ -933,7 +1332,7 @@ function renderMarkdown(text: string, textColor = 'text-ink-800') {
     const parts = str.split('**');
     return parts.map((part, idx) => {
       if (idx % 2 === 1) {
-        return <strong key={idx} className="font-semibold text-ink-950">{part}</strong>;
+        return <strong key={idx} className="font-semibold text-ink-950 dark:text-white">{part}</strong>;
       }
       return part;
     });
@@ -947,10 +1346,8 @@ function renderMarkdown(text: string, textColor = 'text-ink-800') {
     if (olMatch) {
       if (listType !== 'ol') {
         if (inList) {
-          elements.push(listType === 'ul' 
-            ? <ul key={`ul-${lineIdx}`} className="list-disc pl-5 my-2 space-y-1.5">{listItems}</ul> 
-            : <ol key={`ol-${lineIdx}`} className="list-decimal pl-5 my-2 space-y-1.5">{listItems}</ol>
-          );
+          // If previous was list and not ol, it must be ul
+          elements.push(<ul key={`ul-${lineIdx}`} className="list-disc pl-5 my-2 space-y-1.5">{listItems}</ul>);
         }
         inList = true;
         listItems = [];
@@ -960,10 +1357,8 @@ function renderMarkdown(text: string, textColor = 'text-ink-800') {
     } else if (ulMatch) {
       if (listType !== 'ul') {
         if (inList) {
-          elements.push(listType === 'ul' 
-            ? <ul key={`ul-${lineIdx}`} className="list-disc pl-5 my-2 space-y-1.5">{listItems}</ul> 
-            : <ol key={`ol-${lineIdx}`} className="list-decimal pl-5 my-2 space-y-1.5">{listItems}</ol>
-          );
+          // If previous was list and not ul, it must be ol
+          elements.push(<ol key={`ol-${lineIdx}`} className="list-decimal pl-5 my-2 space-y-1.5">{listItems}</ol>);
         }
         inList = true;
         listItems = [];
@@ -1149,8 +1544,8 @@ function ChatBubble({ message }: { message: ChatMessage }) {
       </div>
       <div className={`max-w-[75%] rounded-2xl px-4 py-3 ${
         isUser 
-          ? 'bg-ink-900 text-white shadow-md' 
-          : 'bg-white border border-ink-100 text-ink-800 shadow-sm hover:border-ink-200 transition-all duration-300'
+          ? 'bg-brand-600 text-white shadow-md' 
+          : 'bg-white dark:bg-ink-900/50 border border-ink-100 dark:border-ink-800/80 text-ink-800 dark:text-ink-200 shadow-sm hover:border-ink-200 dark:hover:border-ink-700 transition-all duration-300'
       }`}>
         {isNewAssistant ? (
           <TypedText text={message.content} textColor={textColor} />

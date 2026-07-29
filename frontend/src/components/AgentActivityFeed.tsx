@@ -70,7 +70,7 @@ export function AgentActivityFeed({ projectId, limit = 40, live = true }: { proj
         return (
           <div
             key={ev.id}
-            className="flex gap-3 px-3 py-2.5 rounded-lg hover:bg-ink-50/70 transition-colors animate-slideIn"
+            className="flex gap-3 px-3 py-2.5 rounded-lg hover:bg-ink-50/70 dark:hover:bg-ink-900/40 transition-colors animate-slideIn"
             style={{ animationDelay: `${Math.min(idx * 30, 300)}ms` }}
           >
             <div className={`mt-0.5 shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${typeStyle}`}>
@@ -78,17 +78,17 @@ export function AgentActivityFeed({ projectId, limit = 40, live = true }: { proj
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-sm font-semibold text-ink-900">{meta?.label ?? ev.agent_name}</span>
+                <span className="text-sm font-semibold text-ink-900 dark:text-white">{meta?.label ?? ev.agent_name}</span>
                 <span className={`badge ${typeStyle} !py-0.5`}>{ev.event_type.replace('_', ' ')}</span>
-                <span className="text-xs text-ink-400">{timeAgo(ev.created_at)}</span>
+                <span className="text-xs text-ink-400 dark:text-ink-500">{timeAgo(ev.created_at)}</span>
               </div>
-              <p className="text-sm text-ink-600 mt-0.5 leading-snug">{ev.message}</p>
+              <p className="text-sm text-ink-600 dark:text-ink-300 mt-0.5 leading-snug">{ev.message}</p>
               {ev.details && Object.keys(ev.details).length > 0 && (
                 <details className="mt-1 group">
-                  <summary className="text-xs text-ink-400 cursor-pointer flex items-center gap-1 list-none hover:text-ink-600">
+                  <summary className="text-xs text-ink-400 dark:text-ink-500 cursor-pointer flex items-center gap-1 list-none hover:text-ink-600 dark:hover:text-ink-300">
                     <ChevronRight className="w-3 h-3 group-open:rotate-90 transition-transform" /> details
                   </summary>
-                  <pre className="mt-1 text-xs text-ink-500 bg-ink-50 rounded-md p-2 overflow-x-auto font-mono">{JSON.stringify(ev.details, null, 2)}</pre>
+                  <pre className="mt-1 text-xs text-ink-500 dark:text-ink-400 bg-ink-50 dark:bg-ink-950/40 border border-ink-100/30 dark:border-ink-800/40 rounded-md p-2 overflow-x-auto font-mono">{JSON.stringify(ev.details, null, 2)}</pre>
                 </details>
               )}
             </div>
