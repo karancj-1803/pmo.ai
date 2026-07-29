@@ -922,7 +922,7 @@ function AgentsTab({ projectId }: { projectId: string }) {
 }
 
 // ===== Helper: Pure React Markdown Renderer =====
-function renderMarkdown(text: string) {
+function renderMarkdown(text: string, textColor = 'text-ink-800') {
   const lines = text.split('\n');
   const elements: React.ReactNode[] = [];
   let inList = false;
@@ -956,7 +956,7 @@ function renderMarkdown(text: string) {
         listItems = [];
         listType = 'ol';
       }
-      listItems.push(<li key={`li-${lineIdx}`} className="text-sm text-ink-800">{parseInline(olMatch[2])}</li>);
+      listItems.push(<li key={`li-${lineIdx}`} className={`text-sm ${textColor}`}>{parseInline(olMatch[2])}</li>);
     } else if (ulMatch) {
       if (listType !== 'ul') {
         if (inList) {
@@ -969,7 +969,7 @@ function renderMarkdown(text: string) {
         listItems = [];
         listType = 'ul';
       }
-      listItems.push(<li key={`li-${lineIdx}`} className="text-sm text-ink-800">{parseInline(ulMatch[1])}</li>);
+      listItems.push(<li key={`li-${lineIdx}`} className={`text-sm ${textColor}`}>{parseInline(ulMatch[1])}</li>);
     } else {
       if (inList) {
         elements.push(listType === 'ul' 
@@ -981,7 +981,7 @@ function renderMarkdown(text: string) {
         listItems = [];
       }
       if (trimmed.length > 0) {
-        elements.push(<p key={lineIdx} className="mb-2 last:mb-0 text-sm text-ink-800 leading-relaxed">{parseInline(line)}</p>);
+        elements.push(<p key={lineIdx} className={`mb-2 last:mb-0 text-sm ${textColor} leading-relaxed`}>{parseInline(line)}</p>);
       } else {
         elements.push(<div key={lineIdx} className="h-2" />);
       }
@@ -999,7 +999,7 @@ function renderMarkdown(text: string) {
 }
 
 // ===== Helper: Typing Animation Component =====
-function TypedText({ text, speed = 15 }: { text: string; speed?: number }) {
+function TypedText({ text, speed = 15, textColor = 'text-ink-800' }: { text: string; speed?: number; textColor?: string }) {
   const [displayedText, setDisplayedText] = useState('');
   
   useEffect(() => {
@@ -1016,7 +1016,7 @@ function TypedText({ text, speed = 15 }: { text: string; speed?: number }) {
     return () => clearInterval(interval);
   }, [text, speed]);
 
-  return <div className="space-y-2">{renderMarkdown(displayedText)}</div>;
+  return <div className="space-y-2">{renderMarkdown(displayedText, textColor)}</div>;
 }
 
 // ===== Helper: Thinking / Searching Loader Bubble =====
@@ -1140,6 +1140,7 @@ function ChatTab({ projectId }: { projectId: string }) {
 function ChatBubble({ message }: { message: ChatMessage }) {
   const isUser = message.role === 'user';
   const isNewAssistant = !isUser && message.metadata?.isNew;
+  const textColor = isUser ? 'text-white' : 'text-ink-800';
 
   return (
     <div className={`flex gap-3 ${isUser ? 'flex-row-reverse' : ''} animate-slideUp`}>
@@ -1152,9 +1153,9 @@ function ChatBubble({ message }: { message: ChatMessage }) {
           : 'bg-white border border-ink-100 text-ink-800 shadow-sm hover:border-ink-200 transition-all duration-300'
       }`}>
         {isNewAssistant ? (
-          <TypedText text={message.content} />
+          <TypedText text={message.content} textColor={textColor} />
         ) : (
-          <div className="space-y-2">{renderMarkdown(message.content)}</div>
+          <div className="space-y-2">{renderMarkdown(message.content, textColor)}</div>
         )}
       </div>
     </div>
