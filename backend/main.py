@@ -22,7 +22,7 @@ if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
 # Helper function to call Gemini REST API directly using urllib (bypasses Python 3.14 binary compatibility issues)
-def call_gemini(prompt: str, model_name: str = "gemini-1.5-flash") -> str:
+def call_gemini(prompt: str, model_name: str = "gemini-3.5-flash") -> str:
     if not GEMINI_API_KEY:
         raise ValueError("Missing GEMINI_API_KEY")
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={GEMINI_API_KEY}"
@@ -472,7 +472,7 @@ async def report_agent(project_id: str, report_type: str, parent_event_id: str) 
     }
 
 # ===== Knowledge Agent =====
-async def knowledge_agent(project_id: str, filename: str, content_text: str, content_type: str, parent_event_id: str) -> Dict[str, Any]:
+async def knowledge_agent(project_id: str, filename: str, content_text: str, content_type: str, parent_event_id: str, document_id: Optional[str] = None) -> Dict[str, Any]:
     await log_event(project_id, "knowledge", "agent_start", f"Knowledge Agent invoked — processing '{filename}'", parent_event_id=parent_event_id)
     
     summary = ""
@@ -487,7 +487,7 @@ async def knowledge_agent(project_id: str, filename: str, content_text: str, con
                 f"Respond with JSON format: {{\"summary\": \"...\", \"keywords\": [\"...\"]}}. "
                 f"Document text:\n{content_text[:6000]}"
             )
-            res_text = call_gemini(prompt)
+            res_text = call_gemini(prompt, model_name="gemini-3.5-flash")
             clean_text = res_text.strip().replace("```json", "").replace("```", "").strip()
             data = json.loads(clean_text)
             summary = data.get("summary", "")
@@ -500,9 +500,34 @@ async def knowledge_agent(project_id: str, filename: str, content_text: str, con
         summary = content_text[:280] + "..." if content_text else f"Uploaded {filename}"
         keywords = ["uploaded", filename]
 
+    storage_path = f"{project_id}/{filename}"
+    # Upload file content to Supabase Storage using service role client
+    try:
+        file_bytes = content_text.encode("utf-8")
+        supabase.storage.from_("documents").upload(
+            path=storage_path,
+            file=file_bytes,
+            file_options={"content-type": content_type or "text/plain", "upsert": "true"}
+        )
+        print(f"Successfully uploaded {filename} to Supabase storage path: {storage_path}")
+    except Exception as se:
+        print(f"Failed to upload document to storage: {se}")
+
+    # Update database record directly
+    if document_id:
+        try:
+            supabase.table("documents").update({
+                "storage_path": storage_path,
+                "summary": summary
+            }).eq("id", document_id).execute()
+            print(f"Successfully updated document record {document_id}")
+        except Exception as de:
+            print(f"Failed to update document database record: {de}")
+
     await log_event(project_id, "knowledge", "tool_call", "Called tool: vector_embed(summary)", {
         "tool": "vector_embed",
-        "keywords": keywords
+        "keywords": keywords,
+        "storage_path": storage_path
     }, parent_event_id=parent_event_id)
 
     await log_event(project_id, "knowledge", "agent_end", f"Document ingested — {len(keywords)} concepts extracted", {
@@ -530,7 +555,7 @@ async def chat_agent(project_id: str, question: str, parent_event_id: str) -> Di
     r_res = supabase.table("risks").select("title, severity, status").eq("project_id", project_id).limit(10).execute()
     risks = r_res.data or []
     
-    d_res = supabase.table("documents").select("filename, summary").eq("project_id", project_id).limit(5).execute()
+    d_res = supabase.table("documents").select("filename, summary, content_text").eq("project_id", project_id).limit(5).execute()
     docs = d_res.data or []
 
     await log_event(project_id, "chat", "tool_call", "Called tool: retrieve_context(project, tasks, risks, documents)", {
@@ -541,12 +566,18 @@ async def chat_agent(project_id: str, question: str, parent_event_id: str) -> Di
     answer = ""
     if GEMINI_API_KEY:
         try:
+            # Build list of docs with content_text capped to limit prompt size
+            docs_context = [{
+                "filename": d.get("filename"),
+                "summary": d.get("summary"),
+                "content": (d.get("content_text") or "")[:8000]
+            } for d in docs]
             context = (
                 f"Project Name: {project.get('name')}\n"
                 f"Status: {project.get('status')} ({project.get('progress')}% done)\n"
                 f"Tasks: {json.dumps(tasks)}\n"
                 f"Risks: {json.dumps(risks)}\n"
-                f"Documents: {json.dumps(docs)}\n"
+                f"Documents: {json.dumps(docs_context)}\n"
             )
             prompt = (
                 f"Answer the user's question about the project using the following context. "
@@ -554,7 +585,7 @@ async def chat_agent(project_id: str, question: str, parent_event_id: str) -> Di
                 f"Context:\n{context}\n\n"
                 f"Question: {question}"
             )
-            res_text = call_gemini(prompt)
+            res_text = call_gemini(prompt, model_name="gemini-3.5-flash")
             answer = res_text.strip()
         except Exception as e:
             print(f"Gemini chat failed: {e}. Falling back to rules.")
@@ -640,7 +671,8 @@ async def supervisor_agent_endpoint(request: Request):
                 payload.get("filename", ""),
                 payload.get("contentText", ""),
                 payload.get("contentType", ""),
-                supervisor_id
+                supervisor_id,
+                document_id=payload.get("documentId")
             )
             results.append(knowledge)
             

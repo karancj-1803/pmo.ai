@@ -248,7 +248,7 @@ function taskVerb(phase: string, i: number): string {
 // Summarizes an uploaded document and extracts key concepts (simulated retrieval).
 async function knowledgeAgent(
   ctx: OrchestratorContext,
-  doc: { filename: string; contentText: string; contentType: string },
+  doc: { filename: string; contentText: string; contentType: string; documentId?: string },
 ): Promise<AgentResult> {
   await logEvent(ctx, "knowledge", "agent_start", `Knowledge Agent invoked — processing "${doc.filename}"`);
 
@@ -260,10 +260,35 @@ async function knowledgeAgent(
   const summary = summarize(doc.contentText, doc.filename);
   const keywords = extractKeywords(doc.contentText);
 
+  const storagePath = `${ctx.projectId}/${doc.filename}`;
+  try {
+    const encoder = new TextEncoder();
+    const fileData = encoder.encode(doc.contentText);
+    await ctx.supabase.storage.from("documents").upload(storagePath, fileData, {
+      contentType: doc.contentType || "text/plain",
+      upsert: true,
+    });
+    console.log(`Uploaded to storage path: ${storagePath}`);
+  } catch (se) {
+    console.error(`Failed to upload to storage:`, se);
+  }
+
+  if (doc.documentId) {
+    try {
+      await ctx.supabase
+        .from("documents")
+        .update({ storage_path: storagePath, summary })
+        .eq("id", doc.documentId);
+    } catch (de) {
+      console.error(`Failed to update document db row:`, de);
+    }
+  }
+
   await logEvent(ctx, "knowledge", "tool_call", `Called tool: vector_embed(summary)`, {
     tool: "vector_embed",
     note: "Embedding stored for semantic retrieval (pgvector-ready)",
     keywords,
+    storage_path: storagePath,
   });
 
   await logEvent(ctx, "knowledge", "agent_end", `Document ingested — ${keywords.length} concepts extracted`, {
@@ -593,6 +618,7 @@ async function orchestrate(
       filename: payload.filename as string,
       contentText: payload.contentText as string,
       contentType: payload.contentType as string,
+      documentId: payload.documentId as string,
     });
     results.push(knowledge);
   } else if (action === "analyze_project" || action === "assess_risks") {
