@@ -1514,7 +1514,7 @@ function ChatTab({ projectId }: { projectId: string }) {
           </>
         )}
       </div>
-      <div className="border-t border-ink-100 pt-3 flex gap-2 items-end">
+      <div className="pt-3 flex gap-2 items-end">
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
