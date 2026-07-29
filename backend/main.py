@@ -204,6 +204,9 @@ async def task_agent(project_id: str, phases: List[Dict[str, Any]], project_name
         "output": {"taskCount": len(tasks)}
     }, parent_event_id=parent_event_id)
 
+    # Delete existing agent-generated tasks to avoid duplication
+    supabase.table("tasks").delete().eq("project_id", project_id).eq("agent_generated", True).execute()
+
     # Insert tasks into Supabase
     rows = []
     for t in tasks:
@@ -307,6 +310,9 @@ async def risk_agent(project_id: str, parent_event_id: str) -> Dict[str, Any]:
             risks = identify_risks_rules(tasks)
     else:
         risks = identify_risks_rules(tasks)
+
+    # Delete existing agent-generated risks to avoid duplication
+    supabase.table("risks").delete().eq("project_id", project_id).eq("agent_generated", True).execute()
 
     rows = []
     for r in risks:
