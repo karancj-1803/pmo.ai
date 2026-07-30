@@ -7,4 +7,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: { persistSession: false },
 });
 
-export const EDGE_FUNCTION_URL = (import.meta.env.VITE_BACKEND_URL as string) || `${supabaseUrl}/functions/v1/supervisor-agent`;
+export const EDGE_FUNCTION_URL = import.meta.env.VITE_BACKEND_URL as string;
+
+if (!EDGE_FUNCTION_URL) {
+  console.warn("VITE_BACKEND_URL is not set in the environment. API calls to the supervisor agent will fail.");
+}
+
