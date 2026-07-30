@@ -15,8 +15,10 @@ import { AgentThinking } from '@/components/AgentThinking';
 import {
   Plus, FolderKanban, Workflow, Brain, ListChecks, BookOpen, ShieldAlert, FileText,
   MessageSquare, ArrowLeft, Upload, Sparkles, TrendingUp, AlertTriangle, CheckCircle2,
-  Clock, Calendar, DollarSign, Tag, Activity, Send, RefreshCw, Trash2, FileUp, Search, Sun, Moon,
+  Clock, Calendar, DollarSign, Tag, Activity, Send, RefreshCw, Trash2, FileUp, Search, Sun, Moon, LogOut
 } from 'lucide-react';
+import { Auth } from '@/components/Auth';
+
 
 type View = { name: 'dashboard' } | { name: 'project'; id: string };
 
@@ -26,6 +28,8 @@ const AGENT_ICON: Record<AgentName, typeof Workflow> = {
 };
 
 export default function App() {
+  const [session, setSession] = useState<any>(null);
+  const [loadingAuth, setLoadingAuth] = useState(true);
   const [view, setView] = useState<View>({ name: 'dashboard' });
   const [projects, setProjects] = useState<Project[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(true);
@@ -35,6 +39,19 @@ export default function App() {
     if (saved) return saved === 'dark';
     return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoadingAuth(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     if (darkMode) {
@@ -47,17 +64,41 @@ export default function App() {
   }, [darkMode]);
 
   const loadProjects = useCallback(async () => {
+    if (!session) return;
     setLoadingProjects(true);
     const { data } = await supabase.from('projects').select('*').order('created_at', { ascending: false });
     setProjects((data as Project[]) ?? []);
     setLoadingProjects(false);
-  }, []);
+  }, [session]);
 
-  useEffect(() => { loadProjects(); }, [loadProjects]);
+  useEffect(() => {
+    if (session) {
+      loadProjects();
+    }
+  }, [loadProjects, session]);
+
+  if (loadingAuth) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-ink-50 dark:bg-ink-950">
+        <Spinner className="w-8 h-8 text-brand-500 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <Auth />;
+  }
 
   return (
     <div className="min-h-screen flex bg-ink-50 dark:bg-ink-950 text-ink-900 dark:text-ink-50 transition-colors duration-200">
-      <Sidebar view={view} setView={setView} projectCount={projects.length} darkMode={darkMode} setDarkMode={setDarkMode} />
+      <Sidebar
+        view={view}
+        setView={setView}
+        projectCount={projects.length}
+        darkMode={darkMode}
+        setDarkMode={setDarkMode}
+        userEmail={session.user?.email ?? ''}
+      />
       <main className="flex-1 min-w-0 flex flex-col">
         {view.name === 'dashboard' && (
           <Dashboard
@@ -80,13 +121,18 @@ export default function App() {
         open={showCreate}
         onClose={() => setShowCreate(false)}
         onCreated={(id) => { setShowCreate(false); setView({ name: 'project', id }); }}
+        userId={session.user.id}
       />
     </div>
   );
 }
 
 // ===== Sidebar =====
-function Sidebar({ view, setView, projectCount, darkMode, setDarkMode }: { view: View; setView: (v: View) => void; projectCount: number; darkMode: boolean; setDarkMode: (d: boolean) => void }) {
+function Sidebar({
+  view, setView, projectCount, darkMode, setDarkMode, userEmail
+}: {
+  view: View; setView: (v: View) => void; projectCount: number; darkMode: boolean; setDarkMode: (d: boolean) => void; userEmail: string;
+}) {
   return (
     <aside className="w-60 shrink-0 bg-ink-950 text-ink-200 flex flex-col h-screen sticky top-0">
       <div className="px-5 py-5 flex items-center gap-2.5 border-b border-white/5">
@@ -127,16 +173,28 @@ function Sidebar({ view, setView, projectCount, darkMode, setDarkMode }: { view:
         </div>
       </div>
 
-      <div className="px-4 py-3 border-t border-white/5 flex items-center justify-between">
-        <p className="text-[10px] text-ink-500 leading-relaxed max-w-[120px]">
-          LangChain + LangGraph powered
-        </p>
+      <div className="px-4 py-3.5 border-t border-white/5 flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <div className="min-w-0 flex-1 pr-2">
+            <p className="text-[9px] font-semibold uppercase tracking-wider text-ink-500">User</p>
+            <p className="text-[11px] text-ink-300 font-medium truncate" title={userEmail}>
+              {userEmail}
+            </p>
+          </div>
+          <button
+            onClick={() => setDarkMode(!darkMode)}
+            className="p-1.5 rounded-lg text-ink-400 hover:bg-white/5 hover:text-white transition-colors shrink-0"
+            title="Toggle Light/Dark Theme"
+          >
+            {darkMode ? <Sun className="w-4 h-4 text-warning-400" /> : <Moon className="w-4.5 h-4.5" />}
+          </button>
+        </div>
+
         <button
-          onClick={() => setDarkMode(!darkMode)}
-          className="p-1.5 rounded-lg text-ink-400 hover:bg-white/5 hover:text-white transition-colors"
-          title="Toggle Light/Dark Theme"
+          onClick={() => supabase.auth.signOut()}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-error-400 hover:bg-error-500/10 hover:text-error-300 border border-error-500/20 hover:border-error-500/30 transition-all cursor-pointer"
         >
-          {darkMode ? <Sun className="w-4.5 h-4.5 text-warning-400" /> : <Moon className="w-4.5 h-4.5" />}
+          <LogOut className="w-3.5 h-3.5" /> Log Out
         </button>
       </div>
     </aside>
@@ -248,7 +306,7 @@ function ProjectCard({ project, onOpen }: { project: Project; onOpen: () => void
 }
 
 // ===== Create Project Modal =====
-function CreateProjectModal({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: (id: string) => void }) {
+function CreateProjectModal({ open, onClose, onCreated, userId }: { open: boolean; onClose: () => void; onCreated: (id: string) => void; userId: string }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [goal, setGoal] = useState('');
@@ -274,6 +332,7 @@ function CreateProjectModal({ open, onClose, onCreated }: { open: boolean; onClo
         target_end_date: targetEnd || null,
         budget: budget ? parseFloat(budget) : 0,
         tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
+        user_id: userId,
       }).select('id').single();
       if (pErr || !proj) throw new Error(pErr?.message ?? 'Insert failed');
       const projectId = proj.id;
