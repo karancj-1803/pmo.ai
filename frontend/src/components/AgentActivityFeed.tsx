@@ -18,11 +18,11 @@ const AGENT_ICON: Record<string, typeof Workflow> = {
 };
 
 const EVENT_TYPE_STYLE: Record<string, string> = {
-  decision: 'text-brand-600 bg-brand-50',
-  agent_start: 'text-accent-700 bg-accent-50',
-  agent_end: 'text-ink-600 bg-ink-100',
-  tool_call: 'text-warn-700 bg-warn-50',
-  complete: 'text-brand-700 bg-brand-50',
+  decision: 'text-brand-600 bg-brand-50 dark:bg-brand-950/40 dark:text-brand-400',
+  agent_start: 'text-accent-700 bg-accent-50 dark:bg-accent-950/40 dark:text-accent-600',
+  agent_end: 'text-ink-600 bg-ink-100 dark:bg-ink-800 dark:text-ink-300',
+  tool_call: 'text-warn-700 bg-warn-50 dark:bg-warn-950/40 dark:text-warn-600',
+  complete: 'text-brand-700 bg-brand-50 dark:bg-brand-950/40 dark:text-brand-400',
 };
 
 export function AgentActivityFeed({ projectId, limit = 40, live = true }: { projectId: string; limit?: number; live?: boolean }) {

@@ -1,41 +1,41 @@
 import type { ProjectStatus, TaskStatus, Priority, RiskSeverity, RiskStatus, ReportType } from './types';
 
 export const PROJECT_STATUS_META: Record<ProjectStatus, { label: string; badge: string; dot: string }> = {
-  planning: { label: 'Planning', badge: 'bg-brand-50 text-brand-700 border border-brand-200', dot: 'bg-brand-500' },
-  active: { label: 'Active', badge: 'bg-accent-50 text-accent-700 border border-accent-200', dot: 'bg-accent-500' },
-  on_hold: { label: 'On Hold', badge: 'bg-warn-50 text-warn-700 border border-warn-200', dot: 'bg-warn-500' },
-  completed: { label: 'Completed', badge: 'bg-ink-100 text-ink-700 border border-ink-200', dot: 'bg-ink-400' },
-  cancelled: { label: 'Cancelled', badge: 'bg-danger-50 text-danger-700 border border-danger-200', dot: 'bg-danger-500' },
+  planning: { label: 'Planning', badge: 'bg-brand-50 text-brand-700 border border-brand-200 dark:bg-brand-950/40 dark:text-brand-400 dark:border-brand-900/50', dot: 'bg-brand-500' },
+  active: { label: 'Active', badge: 'bg-accent-50 text-accent-700 border border-accent-200 dark:bg-accent-950/40 dark:text-accent-400 dark:border-accent-900/50', dot: 'bg-accent-500' },
+  on_hold: { label: 'On Hold', badge: 'bg-warn-50 text-warn-700 border border-warn-200 dark:bg-warn-950/40 dark:text-warn-400 dark:border-warn-900/50', dot: 'bg-warn-500' },
+  completed: { label: 'Completed', badge: 'bg-ink-100 text-ink-700 border border-ink-200 dark:bg-ink-800/80 dark:text-ink-300 dark:border-ink-700/50', dot: 'bg-ink-400' },
+  cancelled: { label: 'Cancelled', badge: 'bg-danger-50 text-danger-700 border border-danger-200 dark:bg-danger-950/40 dark:text-danger-400 dark:border-danger-900/50', dot: 'bg-danger-500' },
 };
 
 export const TASK_STATUS_META: Record<TaskStatus, { label: string; badge: string; dot: string }> = {
-  todo: { label: 'To Do', badge: 'bg-ink-100 text-ink-700', dot: 'bg-ink-400' },
-  in_progress: { label: 'In Progress', badge: 'bg-brand-50 text-brand-700', dot: 'bg-brand-500' },
-  review: { label: 'In Review', badge: 'bg-warn-50 text-warn-700', dot: 'bg-warn-500' },
-  done: { label: 'Done', badge: 'bg-accent-50 text-accent-700', dot: 'bg-accent-500' },
-  blocked: { label: 'Blocked', badge: 'bg-danger-50 text-danger-700', dot: 'bg-danger-500' },
+  todo: { label: 'To Do', badge: 'bg-ink-100 text-ink-700 dark:bg-ink-800 dark:text-ink-300', dot: 'bg-ink-400' },
+  in_progress: { label: 'In Progress', badge: 'bg-brand-50 text-brand-700 dark:bg-brand-950/40 dark:text-brand-400', dot: 'bg-brand-500' },
+  review: { label: 'In Review', badge: 'bg-warn-50 text-warn-700 dark:bg-warn-950/40 dark:text-warn-400', dot: 'bg-warn-500' },
+  done: { label: 'Done', badge: 'bg-accent-50 text-accent-700 dark:bg-accent-950/40 dark:text-accent-400', dot: 'bg-accent-500' },
+  blocked: { label: 'Blocked', badge: 'bg-danger-50 text-danger-700 dark:bg-danger-950/40 dark:text-danger-400', dot: 'bg-danger-500' },
 };
 
 export const PRIORITY_META: Record<Priority, { label: string; badge: string }> = {
-  low: { label: 'Low', badge: 'bg-ink-100 text-ink-600' },
-  medium: { label: 'Medium', badge: 'bg-brand-50 text-brand-700' },
-  high: { label: 'High', badge: 'bg-warn-50 text-warn-700' },
-  critical: { label: 'Critical', badge: 'bg-danger-50 text-danger-700' },
+  low: { label: 'Low', badge: 'bg-ink-100 text-ink-600 dark:bg-ink-800 dark:text-ink-300' },
+  medium: { label: 'Medium', badge: 'bg-warn-100 text-warn-700 dark:bg-warn-950/40 dark:text-warn-600' },
+  high: { label: 'High', badge: 'bg-danger-100 text-danger-700 dark:bg-danger-950/40 dark:text-danger-600' },
+  critical: { label: 'Critical', badge: 'bg-danger-800 text-danger-200 dark:bg-danger-800/40 dark:text-danger-400' },
 };
 
 export const RISK_SEVERITY_META: Record<RiskSeverity, { label: string; badge: string; dot: string }> = {
-  low: { label: 'Low', badge: 'bg-ink-100 text-ink-600', dot: 'bg-ink-400' },
-  medium: { label: 'Medium', badge: 'bg-warn-50 text-warn-700', dot: 'bg-warn-500' },
-  high: { label: 'High', badge: 'bg-danger-50 text-danger-700', dot: 'bg-danger-500' },
-  critical: { label: 'Critical', badge: 'bg-danger-100 text-danger-800', dot: 'bg-danger-600' },
+  low: { label: 'Low', badge: 'bg-ink-100 text-ink-600 dark:bg-ink-800 dark:text-ink-300', dot: 'bg-ink-400' },
+  medium: { label: 'Medium', badge: 'bg-warn-50 text-warn-700 dark:bg-warn-950/40 dark:text-warn-600', dot: 'bg-warn-500' },
+  high: { label: 'High', badge: 'bg-danger-50 text-danger-700 dark:bg-danger-950/40 dark:text-danger-600', dot: 'bg-danger-500' },
+  critical: { label: 'Critical', badge: 'bg-danger-100 text-danger-800 dark:bg-danger-950/60 dark:text-danger-600', dot: 'bg-danger-600' },
 };
 
 export const RISK_STATUS_META: Record<RiskStatus, { label: string; badge: string }> = {
-  identified: { label: 'Identified', badge: 'bg-ink-100 text-ink-700' },
-  assessed: { label: 'Assessed', badge: 'bg-brand-50 text-brand-700' },
-  mitigating: { label: 'Mitigating', badge: 'bg-warn-50 text-warn-700' },
-  resolved: { label: 'Resolved', badge: 'bg-accent-50 text-accent-700' },
-  accepted: { label: 'Accepted', badge: 'bg-ink-100 text-ink-600' },
+  identified: { label: 'Identified', badge: 'bg-ink-100 text-ink-700 dark:bg-ink-800 dark:text-ink-300' },
+  assessed: { label: 'Assessed', badge: 'bg-brand-50 text-brand-700 dark:bg-brand-950/40 dark:text-brand-400' },
+  mitigating: { label: 'Mitigating', badge: 'bg-warn-50 text-warn-700 dark:bg-warn-950/40 dark:text-warn-700' },
+  resolved: { label: 'Resolved', badge: 'bg-accent-50 text-accent-700 dark:bg-accent-950/40 dark:text-accent-600' },
+  accepted: { label: 'Accepted', badge: 'bg-ink-100 text-ink-600 dark:bg-ink-800 dark:text-ink-300' },
 };
 
 export const REPORT_TYPE_META: Record<ReportType, { label: string }> = {

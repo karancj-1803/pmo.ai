@@ -134,14 +134,13 @@ function Sidebar({
   view: View; setView: (v: View) => void; projectCount: number; darkMode: boolean; setDarkMode: (d: boolean) => void; userEmail: string;
 }) {
   return (
-    <aside className="w-60 shrink-0 bg-ink-950 text-ink-200 flex flex-col h-screen sticky top-0">
-      <div className="px-5 py-5 flex items-center gap-2.5 border-b border-white/5">
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-glow">
-          <Sparkles className="w-5 h-5 text-white" />
-        </div>
+    <aside className="w-60 shrink-0 bg-white dark:bg-ink-950 text-ink-700 dark:text-ink-200 border-r border-ink-100 dark:border-white/5 flex flex-col h-screen sticky top-0 transition-colors duration-200">
+      <div className="px-5 py-5 flex items-center gap-2.5 border-b border-ink-100 dark:border-white/5">
+        <img src="/pmo-light.png" alt="PMO.AI Logo" className="w-9 h-9 object-contain block dark:hidden" />
+        <img src="/pmo-dark.png" alt="PMO.AI Logo" className="w-9 h-9 object-contain hidden dark:block" />
         <div>
-          <p className="text-sm font-bold text-white leading-tight">PMO.AI</p>
-          <p className="text-[10px] text-ink-400 leading-tight">Agentic Platform</p>
+          <p className="text-sm font-bold text-ink-900 dark:text-white leading-tight">PMO.AI</p>
+          <p className="text-[10px] text-ink-500 dark:text-ink-400 leading-tight">Agentic Platform</p>
         </div>
       </div>
 
@@ -149,23 +148,27 @@ function Sidebar({
         <button
           onClick={() => setView({ name: 'dashboard' })}
           className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-            view.name === 'dashboard' ? 'bg-white/10 text-white' : 'text-ink-300 hover:bg-white/5 hover:text-white'
+            view.name === 'dashboard' 
+              ? 'bg-brand-50 text-brand-700 dark:bg-white/10 dark:text-white' 
+              : 'text-ink-600 dark:text-ink-300 hover:bg-ink-50 dark:hover:bg-white/5 hover:text-ink-900 dark:hover:text-white'
           }`}
         >
           <FolderKanban className="w-4 h-4" /> Projects
-          <span className="ml-auto text-xs text-ink-400">{projectCount}</span>
+          <span className={`ml-auto text-xs ${view.name === 'dashboard' ? 'text-brand-600 dark:text-brand-400 font-semibold' : 'text-ink-400 dark:text-ink-500'}`}>
+            {projectCount}
+          </span>
         </button>
       </nav>
 
-      <div className="px-3 py-4 border-t border-white/5">
-        <p className="px-3 text-[10px] font-semibold uppercase tracking-wider text-ink-500 mb-2">AI Agents</p>
+      <div className="px-3 py-4 border-t border-ink-100 dark:border-white/5">
+        <p className="px-3 text-[10px] font-semibold uppercase tracking-wider text-ink-400 dark:text-ink-500 mb-2">AI Agents</p>
         <div className="space-y-0.5">
           {(Object.keys(AGENT_META) as AgentName[]).map((name) => {
             const meta = AGENT_META[name];
             const Icon = AGENT_ICON[name];
             return (
-              <div key={name} className="flex items-center gap-2.5 px-3 py-1.5 rounded-md text-xs text-ink-400">
-                <Icon className="w-3.5 h-3.5 shrink-0" />
+              <div key={name} className="flex items-center gap-2.5 px-3 py-1.5 rounded-md text-xs text-ink-600 dark:text-ink-400">
+                <Icon className="w-3.5 h-3.5 shrink-0 text-ink-400 dark:text-ink-500" />
                 <span className="truncate">{meta.label.replace(' Agent', '')}</span>
               </div>
             );
@@ -173,26 +176,26 @@ function Sidebar({
         </div>
       </div>
 
-      <div className="px-4 py-3.5 border-t border-white/5 flex flex-col gap-3">
+      <div className="px-4 py-3.5 border-t border-ink-100 dark:border-white/5 flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <div className="min-w-0 flex-1 pr-2">
-            <p className="text-[9px] font-semibold uppercase tracking-wider text-ink-500">User</p>
-            <p className="text-[11px] text-ink-300 font-medium truncate" title={userEmail}>
+            <p className="text-[9px] font-semibold uppercase tracking-wider text-ink-400 dark:text-ink-500">User</p>
+            <p className="text-[11px] text-ink-800 dark:text-ink-200 font-medium truncate" title={userEmail}>
               {userEmail}
             </p>
           </div>
           <button
             onClick={() => setDarkMode(!darkMode)}
-            className="p-1.5 rounded-lg text-ink-400 hover:bg-white/5 hover:text-white transition-colors shrink-0"
+            className="p-1.5 rounded-lg text-ink-500 dark:text-ink-400 hover:bg-ink-100 dark:hover:bg-white/5 hover:text-ink-900 dark:hover:text-white transition-colors shrink-0"
             title="Toggle Light/Dark Theme"
           >
-            {darkMode ? <Sun className="w-4 h-4 text-warning-400" /> : <Moon className="w-4.5 h-4.5" />}
+            {darkMode ? <Sun className="w-4 h-4 text-warning-400" /> : <Moon className="w-4 h-4" />}
           </button>
         </div>
 
         <button
           onClick={() => supabase.auth.signOut()}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-error-400 hover:bg-error-500/10 hover:text-error-300 border border-error-500/20 hover:border-error-500/30 transition-all cursor-pointer"
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-error-600 dark:text-error-400 hover:bg-error-500/5 dark:hover:bg-error-500/10 hover:text-error-700 dark:hover:text-error-300 border border-error-200 dark:border-error-500/20 hover:border-error-300 dark:hover:border-error-500/30 transition-all cursor-pointer"
         >
           <LogOut className="w-3.5 h-3.5" /> Log Out
         </button>
@@ -474,7 +477,7 @@ function ProjectDetail({ projectId, onBack, onCreate }: { projectId: string; onB
               <h1 className="text-xl font-bold text-ink-900 dark:text-white truncate">{project.name}</h1>
               {project.description && <p className="text-sm text-ink-500 dark:text-ink-400 truncate">{project.description}</p>}
             </div>
-            <button onClick={onCreate} className="btn-secondary !py-2"><Plus className="w-4 h-4" /> New</button>
+            <button onClick={onCreate} className="btn-primary !py-2"><Plus className="w-4 h-4" /> New</button>
           </div>
           <nav className="flex gap-1 -mb-px overflow-x-auto scrollbar-thin">
             {tabs.map((t) => {
@@ -1598,7 +1601,7 @@ function ChatBubble({ message }: { message: ChatMessage }) {
   return (
     <div className={`flex gap-3 ${isUser ? 'flex-row-reverse' : ''} animate-slideUp`}>
       <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center ${isUser ? 'bg-ink-200 text-ink-600 border border-ink-300/40 shadow-sm' : 'bg-brand-600 text-white shadow-sm'}`}>
-        {isUser ? <span className="text-xs font-bold">You</span> : <MessageSquare className="w-4 h-4" />}
+        {isUser ? <span className="text-xs font-bold dark:text-slate-700">You</span> : <MessageSquare className="w-4 h-4" />}
       </div>
       <div className={`max-w-[75%] rounded-2xl px-4 py-3 ${
         isUser 

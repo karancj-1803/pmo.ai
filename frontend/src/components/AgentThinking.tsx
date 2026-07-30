@@ -282,7 +282,7 @@ export function AgentThinking({ projectId }: { projectId: string }) {
         // Custom color states matching UI tags
         // Custom color states matching UI tags
         const statusColors = agent.status === 'Completed' 
-          ? 'bg-accent-50 dark:bg-accent-950/35 text-accent-700 dark:text-accent-400 border-accent-100/50 dark:border-accent-900/30' 
+          ? 'bg-accent-50 dark:bg-accent-950/35 text-accent-700 dark:text-accent-600 border-accent-100/50 dark:border-accent-900/30' 
           : 'bg-brand-50 dark:bg-brand-950/35 text-brand-700 dark:text-brand-400 border-brand-100/50 dark:border-brand-900/30 animate-pulse';
 
         return (

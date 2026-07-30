@@ -10,11 +10,8 @@
     -moz-osx-font-smoothing: grayscale;
   }
   body {
-    @apply bg-ink-50 text-ink-900 font-sans antialiased;
+    @apply bg-ink-50 text-ink-900 dark:bg-ink-950 dark:text-ink-50 font-sans antialiased;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
-  }
-  .dark body {
-    @apply bg-ink-950 text-ink-50;
   }
   ::selection {
     @apply bg-brand-200 text-brand-950;
@@ -27,25 +24,19 @@
     @apply bg-transparent;
   }
   ::-webkit-scrollbar-thumb {
-    @apply bg-ink-200 rounded-full border-2 border-transparent bg-clip-content;
-  }
-  .dark ::-webkit-scrollbar-thumb {
-    @apply bg-ink-800 rounded-full border-2 border-transparent bg-clip-content;
+    @apply bg-ink-200 rounded-full border-2 border-transparent bg-clip-content dark:bg-ink-800;
   }
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-ink-300;
-  }
-  .dark ::-webkit-scrollbar-thumb:hover {
-    @apply bg-ink-700;
+    @apply bg-ink-300 dark:bg-ink-700;
   }
 
   /* High contrast text color inversion in Dark Mode */
-  .dark .text-ink-900 { color: #f6f7f9 !important; }
-  .dark .text-ink-800 { color: #eceef2 !important; }
-  .dark .text-ink-700 { color: #d5d9e2 !important; }
-  .dark .text-ink-600 { color: #b0b8c8 !important; }
-  .dark .text-ink-500 { color: #8590a8 !important; }
-  .dark .text-ink-400 { color: #67718c !important; }
+  .dark .text-ink-900 { color: #f8fafc !important; }
+  .dark .text-ink-800 { color: #f1f5f9 !important; }
+  .dark .text-ink-700 { color: #e2e8f0 !important; }
+  .dark .text-ink-600 { color: #cbd5e1 !important; }
+  .dark .text-ink-500 { color: #cbd5e1 !important; }
+  .dark .text-ink-400 { color: #94a3b8 !important; }
 }
 
 @layer components {

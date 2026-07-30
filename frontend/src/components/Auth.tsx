@@ -56,8 +56,9 @@ export function Auth() {
         <div className="absolute -bottom-12 -right-12 w-24 h-24 bg-accent-500/10 rounded-full blur-2xl pointer-events-none" />
 
         <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-glow mb-4">
-            <Sparkles className="w-6 h-6 text-white" />
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4">
+            <img src="/pmo-light.png" alt="PMO.AI Logo" className="w-12 h-12 object-contain block dark:hidden" />
+            <img src="/pmo-dark.png" alt="PMO.AI Logo" className="w-12 h-12 object-contain hidden dark:block" />
           </div>
           <h2 className="text-xl font-bold text-ink-900 dark:text-white leading-tight">
             {isSignUp ? 'Create your account' : 'Sign in to PMO.AI'}
