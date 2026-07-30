@@ -98,6 +98,10 @@ export default function App() {
         darkMode={darkMode}
         setDarkMode={setDarkMode}
         userEmail={session.user?.email ?? ''}
+        onSignOut={async () => {
+          setSession(null); // Optimistically clear the local React state instantly!
+          await supabase.auth.signOut();
+        }}
       />
       <main className="flex-1 min-w-0 flex flex-col">
         {view.name === 'dashboard' && (
@@ -129,9 +133,9 @@ export default function App() {
 
 // ===== Sidebar =====
 function Sidebar({
-  view, setView, projectCount, darkMode, setDarkMode, userEmail
+  view, setView, projectCount, darkMode, setDarkMode, userEmail, onSignOut
 }: {
-  view: View; setView: (v: View) => void; projectCount: number; darkMode: boolean; setDarkMode: (d: boolean) => void; userEmail: string;
+  view: View; setView: (v: View) => void; projectCount: number; darkMode: boolean; setDarkMode: (d: boolean) => void; userEmail: string; onSignOut: () => void;
 }) {
   return (
     <aside className="w-60 shrink-0 bg-white dark:bg-ink-950 text-ink-700 dark:text-ink-200 border-r border-ink-100 dark:border-white/5 flex flex-col h-screen sticky top-0 transition-colors duration-200">
@@ -194,7 +198,7 @@ function Sidebar({
         </div>
 
         <button
-          onClick={() => supabase.auth.signOut()}
+          onClick={onSignOut}
           className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-error-600 dark:text-error-400 hover:bg-error-500/5 dark:hover:bg-error-500/10 hover:text-error-700 dark:hover:text-error-300 border border-error-200 dark:border-error-500/20 hover:border-error-300 dark:hover:border-error-500/30 transition-all cursor-pointer"
         >
           <LogOut className="w-3.5 h-3.5" /> Log Out

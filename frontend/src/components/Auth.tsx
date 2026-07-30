@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Sparkles, Mail, Lock, AlertTriangle, ArrowRight } from 'lucide-react';
+import { Sparkles, Mail, Lock, AlertTriangle, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { Spinner } from '@/components/ui';
 
 export function Auth() {
@@ -10,6 +10,7 @@ export function Auth() {
   const [error, setError] = useState<string | null>(null);
   const [isSignUp, setIsSignUp] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,13 +116,21 @@ export function Auth() {
             <div className="relative">
               <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full bg-ink-50 dark:bg-ink-950/50 border border-ink-100 dark:border-ink-800 focus:border-brand-500 dark:focus:border-brand-500 rounded-xl py-2.5 pl-10 pr-4 text-sm outline-none transition-all"
+                className="w-full bg-ink-50 dark:bg-ink-950/50 border border-ink-100 dark:border-ink-800 focus:border-brand-500 dark:focus:border-brand-500 rounded-xl py-2.5 pl-10 pr-11 text-sm outline-none transition-all"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-ink-400 hover:text-ink-600 dark:hover:text-white transition-colors cursor-pointer"
+                title={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
           </div>
 
