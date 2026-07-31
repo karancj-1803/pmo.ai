@@ -14,7 +14,7 @@ load_dotenv()
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
     raise ValueError("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY environment variables")
@@ -22,21 +22,23 @@ if not SUPABASE_URL or not SUPABASE_SERVICE_ROLE_KEY:
 # Initialize Supabase client
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
-# Helper function to call Gemini REST API directly using urllib (compatible with Python 3.14)
-@traceable(name="Call Gemini Model", run_type="llm")
-def call_gemini(prompt: str, model_name: str = "gemini-3.5-flash") -> str:
-    if not GEMINI_API_KEY:
-        raise ValueError("Missing GEMINI_API_KEY")
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={GEMINI_API_KEY}"
-    headers = {"Content-Type": "application/json"}
+# Helper function to call Groq REST API directly using urllib (compatible with Python 3.14)
+@traceable(name="Call Groq Model", run_type="llm")
+def call_groq(prompt: str, model_name: str = "llama-3.3-70b-versatile") -> str:
+    if not GROQ_API_KEY:
+        raise ValueError("Missing GROQ_API_KEY")
+    url = "https://api.groq.com/openai/v1/chat/completions"
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
     body = {
-        "contents": [
-            {
-                "parts": [
-                    {"text": prompt}
-                ]
-            }
-        ]
+        "model": model_name,
+        "messages": [
+            {"role": "user", "content": prompt}
+        ],
+        "temperature": 0.1
     }
     req = urllib.request.Request(
         url,
@@ -47,7 +49,7 @@ def call_gemini(prompt: str, model_name: str = "gemini-3.5-flash") -> str:
     with urllib.request.urlopen(req) as response:
         res_body = response.read().decode("utf-8")
         res_json = json.loads(res_body)
-        return res_json["candidates"][0]["content"]["parts"][0]["text"]
+        return res_json["choices"][0]["message"]["content"]
 
 app = FastAPI(title="PMO.AI Backend Service")
 
@@ -113,7 +115,7 @@ async def planning_agent(project_id: str, goal: str, parent_event_id: str) -> Di
     await log_event(project_id, "planning", "agent_start", "Planning Agent invoked — decomposing project goal", parent_event_id=parent_event_id)
     
     phases = []
-    if GEMINI_API_KEY:
+    if GROQ_API_KEY:
         try:
             prompt = (
                 f"Decompose the following project goal into 4 to 6 sequential phases. "
@@ -121,11 +123,11 @@ async def planning_agent(project_id: str, goal: str, parent_event_id: str) -> Di
                 f"Respond with a raw valid JSON list of objects containing name (string), description (string), and weight (integer representing percentage progress weight, sum of all weights must equal 100). "
                 f"Do not include markdown blocks or any text other than the raw JSON."
             )
-            res_text = call_gemini(prompt)
+            res_text = call_groq(prompt)
             clean_text = res_text.strip().replace("```json", "").replace("```", "").strip()
             phases = json.loads(clean_text)
         except Exception as e:
-            print(f"Gemini planning failed: {e}. Falling back to rules.")
+            print(f"Groq planning failed: {e}. Falling back to rules.")
             phases = decompose_goal_rules(goal)
     else:
         phases = decompose_goal_rules(goal)
@@ -191,7 +193,7 @@ async def task_agent(project_id: str, phases: List[Dict[str, Any]], project_name
         print(f"Failed to fetch project context: {e}")
 
     tasks = []
-    if GEMINI_API_KEY:
+    if GROQ_API_KEY:
         try:
             prompt = (
                 f"For the project '{project_name}' with the following details:\n"
@@ -209,11 +211,11 @@ async def task_agent(project_id: str, phases: List[Dict[str, Any]], project_name
                 f"estimatedHours (integer hours between 4 and 40). "
                 f"Do not include markdown tags."
             )
-            res_text = call_gemini(prompt)
+            res_text = call_groq(prompt)
             clean_text = res_text.strip().replace("```json", "").replace("```", "").strip()
             tasks = json.loads(clean_text)
         except Exception as e:
-            print(f"Gemini task generation failed: {e}. Falling back to rules.")
+            print(f"Groq task generation failed: {e}. Falling back to rules.")
             tasks = generate_tasks_rules(phases, project_name)
     else:
         tasks = generate_tasks_rules(phases, project_name)
@@ -309,7 +311,7 @@ async def risk_agent(project_id: str, parent_event_id: str) -> Dict[str, Any]:
     }, parent_event_id=parent_event_id)
 
     risks = []
-    if GEMINI_API_KEY and len(tasks) > 0:
+    if GROQ_API_KEY and len(tasks) > 0:
         try:
             prompt = (
                 f"Given the following project tasks:\n"
@@ -323,11 +325,11 @@ async def risk_agent(project_id: str, parent_event_id: str) -> Dict[str, Any]:
                 f"mitigation (string)."
                 f"Do not include markdown tags."
             )
-            res_text = call_gemini(prompt)
+            res_text = call_groq(prompt)
             clean_text = res_text.strip().replace("```json", "").replace("```", "").strip()
             risks = json.loads(clean_text)
         except Exception as e:
-            print(f"Gemini risk identification failed: {e}. Falling back to rules.")
+            print(f"Groq risk identification failed: {e}. Falling back to rules.")
             risks = identify_risks_rules(tasks)
     else:
         risks = identify_risks_rules(tasks)
@@ -501,7 +503,7 @@ async def knowledge_agent(project_id: str, filename: str, content_text: str, con
     summary = ""
     keywords = []
     
-    if GEMINI_API_KEY:
+    if GROQ_API_KEY:
         try:
             prompt = (
                 f"Analyze the following document text and provide: "
@@ -510,13 +512,13 @@ async def knowledge_agent(project_id: str, filename: str, content_text: str, con
                 f"Respond with JSON format: {{\"summary\": \"...\", \"keywords\": [\"...\"]}}. "
                 f"Document text:\n{content_text[:6000]}"
             )
-            res_text = call_gemini(prompt, model_name="gemini-3.5-flash")
+            res_text = call_groq(prompt, model_name="llama-3.3-70b-versatile")
             clean_text = res_text.strip().replace("```json", "").replace("```", "").strip()
             data = json.loads(clean_text)
             summary = data.get("summary", "")
             keywords = data.get("keywords", [])
         except Exception as e:
-            print(f"Gemini document processing failed: {e}. Falling back to rules.")
+            print(f"Groq document processing failed: {e}. Falling back to rules.")
             summary = content_text[:280] + "..." if content_text else f"Uploaded {filename}"
             keywords = ["uploaded", filename]
     else:
@@ -588,7 +590,7 @@ async def chat_agent(project_id: str, question: str, parent_event_id: str) -> Di
     }, parent_event_id=parent_event_id)
 
     answer = ""
-    if GEMINI_API_KEY:
+    if GROQ_API_KEY:
         try:
             # Build list of docs with content_text capped to limit prompt size
             docs_context = [{
@@ -605,14 +607,16 @@ async def chat_agent(project_id: str, question: str, parent_event_id: str) -> Di
             )
             prompt = (
                 f"Answer the user's question about the project using the following context. "
-                f"Keep it concise, clear, and professional. Use markdown formatting.\n\n"
+                f"Keep it concise, clear, and professional. Use markdown formatting. "
+                f"Do NOT start your response with any title, header, or prefix like '### Response' or '### Critical Tasks'. "
+                f"Begin directly with the answer content.\n\n"
                 f"Context:\n{context}\n\n"
                 f"Question: {question}"
             )
-            res_text = call_gemini(prompt, model_name="gemini-3.5-flash")
+            res_text = call_groq(prompt, model_name="llama-3.3-70b-versatile")
             answer = res_text.strip()
         except Exception as e:
-            print(f"Gemini chat failed: {e}. Falling back to rules.")
+            print(f"Groq chat failed: {e}. Falling back to rules.")
             answer = synthesize_answer_rules(question, project, tasks, risks, docs)
     else:
         answer = synthesize_answer_rules(question, project, tasks, risks, docs)

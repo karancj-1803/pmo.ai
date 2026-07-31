@@ -1467,7 +1467,8 @@ function TypedText({ text, speed = 15, textColor = 'text-ink-800' }: { text: str
     let index = 0;
     setDisplayedText('');
     const interval = setInterval(() => {
-      setDisplayedText((prev) => prev + (index === 0 ? '' : ' ') + words[index]);
+      const currentIndex = index;
+      setDisplayedText((prev) => prev + (currentIndex === 0 ? '' : ' ') + words[currentIndex]);
       index++;
       if (index >= words.length) {
         clearInterval(interval);
@@ -1486,7 +1487,7 @@ function ThinkingBubble() {
     { text: 'Supervisor routing request...', icon: <Workflow className="w-4 h-4 text-brand-600 animate-spin" /> },
     { text: 'Chat Agent searching requirements & knowledge base...', icon: <Search className="w-4 h-4 text-accent-600 animate-pulse" /> },
     { text: 'Fetching document content context...', icon: <BookOpen className="w-4 h-4 text-brand-600" /> },
-    { text: 'Gemini reasoning & generating response...', icon: <Sparkles className="w-4 h-4 text-warning-500 animate-bounce" /> }
+    { text: 'PMO reasoning & generating response...', icon: <Sparkles className="w-4 h-4 text-warning-500 animate-bounce" /> }
   ];
 
   useEffect(() => {
